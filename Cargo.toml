@@ -1,0 +1,25 @@
+[package]
+name = "eh3d-cam-debugger"
+version = "0.0.1"
+edition = "2021"
+rust-version = "1.75"
+description = "Checks a G-code program before it reaches a machine: the time it takes, rapid moves into the material, moves outside the table, cuts with the spindle off and heads over clamps"
+license = "GPL-3.0-or-later"
+repository = "https://github.com/JuanenRac/EH3D-CAM-DEBUGGER"
+readme = "README.md"
+
+[lib]
+name = "eh3d_cam_debugger"
+path = "src/lib.rs"
+
+[[bin]]
+name = "eh3d-camdebug"
+path = "src/main.rs"
+
+[dependencies]
+# the G-code reader and interpreter of the suite (a path dependency on the sibling repository)
+eh3d-parser-gcode = { path = "../EH3D-CORE-LIBS/crates/eh3d-parser-gcode" }
+
+[profile.release]
+opt-level = 3
+lto = true
