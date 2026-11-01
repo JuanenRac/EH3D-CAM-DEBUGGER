@@ -18,7 +18,7 @@ path = "src/main.rs"
 
 [dependencies]
 # the G-code reader and interpreter of the suite (a path dependency on the sibling repository)
-eh3d-parser-gcode = { path = "../EH3D-CORE-LIBS/crates/eh3d-parser-gcode" }
+eh3d-parser-gcode = { version = ">=0.0.2", path = "../EH3D-CORE-LIBS/crates/eh3d-parser-gcode" }
 
 [profile.release]
 opt-level = 3

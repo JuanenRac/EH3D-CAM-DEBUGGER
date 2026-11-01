@@ -4,6 +4,7 @@ All notable changes to this project are documented here.
 
 ## [Unreleased]
 
+- **Each dependency on a sibling repository by path says the version it needs** (`version = ">=0.0.1", path = "../EH3D-..."`), so Cargo stops at once when the sibling next to this one is older than the program expects.
 - **Arcs are checked along the arc:** the table limits and the clamps are tested on the points of a G2 or G3, not on its chord, so an arc that leaves the table or passes over a clamp with both ends inside is found.
 - **`--strict`:** every warning counts as an alert (exit code 1), for a flow that uses the exit code as the barrier before the machine (a cut with the spindle off, for one).
 - A program with G92, G53, G28, G30 or G10 is reported (the reader of G-code says it did not follow them) instead of 'no findings'.
