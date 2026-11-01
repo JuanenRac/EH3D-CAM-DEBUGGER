@@ -252,3 +252,63 @@ fn garbage_does_not_panic() {
         );
     }
 }
+
+#[test]
+fn an_arc_is_checked_along_the_arc_and_not_along_its_chord() {
+    // from (20,10) to (30,10) round the centre (25,10), clockwise: it passes through (25,15)
+    let t = trace("G21 G90\nG0 X20 Y10 Z5\nG2 X30 Y10 I5 J0 F100\nM2\n");
+    let clamp = Clamp {
+        x0: 24.0,
+        y0: 12.0,
+        x1: 26.0,
+        y1: 20.0,
+        height_mm: 10.0,
+    };
+    let l = Limits {
+        surface_z: -1.0,
+        clamps: vec![clamp],
+        ..Limits::default()
+    };
+    let f = check(&t, &l);
+    assert!(
+        f.iter()
+            .any(|f| f.level == Level::Alert && f.message.contains("clamp")),
+        "{f:?}"
+    );
+    // both ends are inside the table, the arc is not
+    let l = Limits {
+        surface_z: -1.0,
+        table: Some((40.0, 12.0)),
+        ..Limits::default()
+    };
+    let f = check(&t, &l);
+    assert!(
+        f.iter().any(|f| f.message.contains("outside the table")),
+        "{f:?}"
+    );
+}
+
+#[test]
+fn the_codes_that_change_the_origin_are_never_reported_as_clean() {
+    for code in [
+        "G92 X0 Y0 Z0",
+        "G53 G0 Z-1",
+        "G28 X0 Y0",
+        "G30",
+        "G10 L20 P1 X0 Y0 Z0",
+    ] {
+        let t = trace(&format!(
+            "G21 G90\nG0 X1 Y1 Z5\n{code}\nG1 X5 Y5 F100\nM2\n"
+        ));
+        assert!(!check(&t, &Limits::default()).is_empty(), "{code}");
+    }
+}
+
+#[test]
+fn strict_makes_the_warnings_alerts() {
+    let t = trace("G21 G90\nG1 Z-1 F100\nG1 X20\nM2\n");
+    let mut f = check(&t, &Limits::default());
+    assert!(!f.is_empty() && !has_alerts(&f));
+    eh3d_cam_debugger::checks::strict(&mut f);
+    assert!(has_alerts(&f));
+}

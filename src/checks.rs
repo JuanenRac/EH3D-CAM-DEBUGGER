@@ -1,6 +1,6 @@
 //! What would hurt: each finding has the line of the program, how serious it is and what it is.
 
-use eh3d_parser_gcode::{Motion, Severity, Trace};
+use eh3d_parser_gcode::{Motion, Segment, Severity, Trace};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Level {
@@ -61,6 +61,62 @@ fn over_clamp(c: &Clamp, x: f64, y: f64, z: f64) -> bool {
         && y >= c.y0.min(c.y1)
         && y <= c.y0.max(c.y1)
         && z < c.height_mm
+}
+
+/// The sweep of an arc: its centre, its radius and the angle it starts and ends at (negative sweep for G2). `None` for a straight move or a degenerate arc.
+fn arc_of(s: &Segment) -> Option<((f64, f64), f64, f64, f64)> {
+    let (center, cw) = match s.motion {
+        Motion::ArcCw { center } => (center, true),
+        Motion::ArcCcw { center } => (center, false),
+        _ => return None,
+    };
+    let r = ((s.from.x - center.0).powi(2) + (s.from.y - center.1).powi(2)).sqrt();
+    if r < 1e-9 {
+        return None;
+    }
+    let a0 = (s.from.y - center.1).atan2(s.from.x - center.0);
+    let mut a1 = (s.to.y - center.1).atan2(s.to.x - center.0);
+    if cw {
+        while a1 >= a0 - 1e-12 {
+            a1 -= 2.0 * std::f64::consts::PI;
+        }
+    } else {
+        while a1 <= a0 + 1e-12 {
+            a1 += 2.0 * std::f64::consts::PI;
+        }
+    }
+    Some((center, r, a0, a1))
+}
+
+/// The point of a move at `t` (0 at the start, 1 at the end): on the arc for G2 and G3, on the straight line for the rest.
+fn point_at(s: &Segment, t: f64) -> (f64, f64, f64) {
+    let z = s.from.z + (s.to.z - s.from.z) * t;
+    match arc_of(s) {
+        Some((center, r, a0, a1)) => {
+            let a = a0 + (a1 - a0) * t;
+            (center.0 + r * a.cos(), center.1 + r * a.sin(), z)
+        }
+        None => (
+            s.from.x + (s.to.x - s.from.x) * t,
+            s.from.y + (s.to.y - s.from.y) * t,
+            z,
+        ),
+    }
+}
+
+/// How far the move goes in the XY plane (along the arc for G2 and G3).
+fn plan_length(s: &Segment) -> f64 {
+    match arc_of(s) {
+        Some((_, r, a0, a1)) => r * (a1 - a0).abs(),
+        None => ((s.to.x - s.from.x).powi(2) + (s.to.y - s.from.y).powi(2)).sqrt(),
+    }
+}
+
+/// Makes every warning an alert: for a flow that uses the exit code as the barrier before the machine.
+pub fn strict(findings: &mut [Finding]) {
+    for f in findings.iter_mut() {
+        f.level = Level::Alert;
+    }
 }
 
 /// Runs every check on the trace. The findings come in the order of the program; the diagnostics of the reader become findings too.
@@ -127,30 +183,24 @@ pub fn check(trace: &Trace, limits: &Limits) -> Vec<Finding> {
             }
         }
         if let Some((w, d)) = limits.table {
-            for p in [s.from, s.to] {
-                if p.x < -EPS || p.y < -EPS || p.x > w + EPS || p.y > d + EPS {
+            // the ends, and for an arc the points along it: an arc can leave the table with both ends inside
+            let steps = if arc_of(s).is_some() { 64 } else { 1 };
+            for k in 0..=steps {
+                let (x, y, _) = point_at(s, k as f64 / steps as f64);
+                if x < -EPS || y < -EPS || x > w + EPS || y > d + EPS {
                     out.push(Finding {
                         line: s.line,
                         level: Level::Alert,
-                        message: format!(
-                            "({:.3}, {:.3}) is outside the table of {w} x {d} mm",
-                            p.x, p.y
-                        ),
+                        message: format!("({x:.3}, {y:.3}) is outside the table of {w} x {d} mm"),
                     });
                     break;
                 }
             }
         }
         if !limits.clamps.is_empty() {
-            let len = ((s.to.x - s.from.x).powi(2) + (s.to.y - s.from.y).powi(2)).sqrt();
-            let n = ((len / SAMPLE_MM).ceil() as usize).clamp(1, 20_000);
+            let n = ((plan_length(s) / SAMPLE_MM).ceil() as usize).clamp(1, 20_000);
             'segment: for k in 0..=n {
-                let t = k as f64 / n as f64;
-                let (x, y, z) = (
-                    s.from.x + (s.to.x - s.from.x) * t,
-                    s.from.y + (s.to.y - s.from.y) * t,
-                    s.from.z + (s.to.z - s.from.z) * t,
-                );
+                let (x, y, z) = point_at(s, k as f64 / n as f64);
                 for (i, c) in limits.clamps.iter().enumerate() {
                     if over_clamp(c, x, y, z) {
                         out.push(Finding { line: s.line, level: Level::Alert, message: format!("the head passes over the clamp {} at ({x:.2}, {y:.2}) with Z {z:.2} below its height {:.2}", i + 1, c.height_mm) });

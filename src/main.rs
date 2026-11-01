@@ -2,7 +2,7 @@
 // Copyright (C) 2026 JuanenRac (Electro Hobby 3D). GPL-3.0-or-later.
 #![forbid(unsafe_code)]
 
-use eh3d_cam_debugger::checks::{check, has_alerts, Clamp, Level, Limits};
+use eh3d_cam_debugger::checks::{check, has_alerts, strict, Clamp, Level, Limits};
 use eh3d_cam_debugger::timeline::{format_time, timeline, Machine};
 use eh3d_parser_gcode::{interpret, parse, Dialect};
 use std::env;
@@ -16,6 +16,7 @@ const HELP: &str = "eh3d-camdebug: checks a G-code program before it reaches a m
 
 Options: --accel MM_S2 (500)  --rapid MM_MIN (3000)  --feed MM_MIN (300, used when a cut has no feed)  --dialect grbl|marlin|planetcnc
          --table WIDTH,DEPTH  --surface Z (0)  --min-z Z  --max-feed MM_MIN  --clamp X0,Y0,X1,Y1,HEIGHT (as many as needed)
+         --strict (every warning is an alert too: exit code 1 for a cut with the spindle off, for one)
 The time is an upper bound: every move is counted from rest to rest.";
 
 fn nums(text: &str, n: usize, what: &str) -> Result<Vec<f64>, String> {
@@ -30,10 +31,16 @@ fn nums(text: &str, n: usize, what: &str) -> Result<Vec<f64>, String> {
     Ok(v)
 }
 
-fn parse_options(args: &[String]) -> Result<(Machine, Limits, Dialect), String> {
+fn parse_options(args: &[String]) -> Result<(Machine, Limits, Dialect, bool), String> {
     let (mut m, mut l, mut d) = (Machine::default(), Limits::default(), Dialect::Grbl);
+    let mut strict = false;
     let mut i = 0;
     while i < args.len() {
+        if args[i] == "--strict" {
+            strict = true;
+            i += 1;
+            continue;
+        }
         let value = || {
             args.get(i + 1)
                 .cloned()
@@ -77,7 +84,7 @@ fn parse_options(args: &[String]) -> Result<(Machine, Limits, Dialect), String> 
         i += 2;
     }
     m.validate()?;
-    Ok((m, l, d))
+    Ok((m, l, d, strict))
 }
 
 fn run(mut args: Vec<String>) -> Result<bool, String> {
@@ -90,7 +97,7 @@ fn run(mut args: Vec<String>) -> Result<bool, String> {
         return Err(format!("{cmd} needs a G-code file"));
     }
     let file = args.remove(0);
-    let (machine, limits, dialect) = parse_options(&args)?;
+    let (machine, limits, dialect, strict_mode) = parse_options(&args)?;
     let bytes = fs::read(&file).map_err(|e| format!("{file}: {e}"))?;
     let trace = interpret(&parse(&String::from_utf8_lossy(&bytes), dialect));
     let tl = timeline(&trace, &machine)?;
@@ -108,7 +115,10 @@ fn run(mut args: Vec<String>) -> Result<bool, String> {
                 format_time(tl.cutting_s),
                 format_time(tl.rapid_s)
             );
-            let findings = check(&trace, &limits);
+            let mut findings = check(&trace, &limits);
+            if strict_mode {
+                strict(&mut findings);
+            }
             for f in &findings {
                 println!(
                     "{} line {}: {}",
