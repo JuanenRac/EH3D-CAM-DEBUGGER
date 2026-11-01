@@ -58,6 +58,7 @@ Each line is one part of this repository and the light says how far it is today.
 * **The time** (`src/timeline.rs`): every move is a trapezoid of speed from rest to rest with the acceleration and the rapid speed of the machine; the arcs are measured along the arc, a cut with no feed uses a default one, and the total is split in cutting and rapid. It is an upper bound: a real controller does not stop between moves.
 * **The alerts** (`src/checks.rs`): a rapid move (G0) into the material or sideways below the surface, a move outside the table, a Z below the lowest one of the machine, and a head that passes over a clamp below its height are alerts (exit code 1); a cut with the spindle off, a cut with no feed and a feed above a limit are warnings.
 * **What the reader could not understand** (cutter compensation, canned cycles, a damaged line) comes up as an alert with its line, so a program that was misread is never reported as clean.
+* **Arcs, `--strict` and the codes that move the origin:** the table limits and the clamps are tested along the arc of a G2 or G3, not along its chord; `--strict` makes every warning an alert (exit code 1), for a flow that uses the exit code as the barrier before the machine; a program with G92, G53, G28, G30 or G10 is reported instead of passing as clean.
 
 ## 🧩 Role in EH3D
 

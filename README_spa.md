@@ -58,6 +58,7 @@ Cada línea es una parte de este repositorio y la luz dice hasta dónde llega ho
 * **El tiempo** (`src/timeline.rs`): cada movimiento es un trapecio de velocidad de reposo a reposo con la aceleración y la velocidad rápida de la máquina; los arcos se miden a lo largo del arco, un corte sin avance usa uno por defecto y el total se reparte en corte y rápido. Es una cota superior: un controlador real no se detiene entre movimientos.
 * **Las alertas** (`src/checks.rs`): un movimiento rápido (G0) al material o de lado bajo la superficie, un movimiento fuera de la mesa, una Z por debajo de la más baja de la máquina y un cabezal que pasa sobre una pinza por debajo de su altura son alertas (código de salida 1); un corte con el husillo parado, un corte sin avance y un avance por encima de un límite son avisos.
 * **Lo que el lector no pudo entender** (compensación de radio, ciclos fijos, una línea dañada) aparece como alerta con su línea, de modo que un programa mal leído nunca se da por limpio.
+* **Arcos, `--strict` y los códigos que mueven el origen:** los límites de la mesa y las bridas se comprueban a lo largo del arco de un G2 o G3, no de su cuerda; `--strict` convierte cada aviso en alerta (código de salida 1), para un flujo que usa el código de salida como barrera antes de la máquina; un programa con G92, G53, G28, G30 o G10 se señala en vez de pasar por limpio.
 
 ## 🧩 Papel en EH3D
 

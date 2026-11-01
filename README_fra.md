@@ -58,6 +58,7 @@ Chaque ligne est une partie de ce dépôt et le feu dit où elle en est aujourd'
 * **Le temps** (`src/timeline.rs`) : chaque mouvement est un trapèze de vitesse de l'arrêt à l'arrêt avec l'accélération et la vitesse rapide de la machine ; les arcs sont mesurés le long de l'arc, une coupe sans avance en utilise une par défaut et le total se partage en coupe et rapide. C'est une borne supérieure : un vrai contrôleur ne s'arrête pas entre les mouvements.
 * **Les alertes** (`src/checks.rs`) : un mouvement rapide (G0) dans la matière ou de côté sous la surface, un mouvement hors de la table, un Z sous le plus bas de la machine et une tête qui passe au-dessus d'une pince sous sa hauteur sont des alertes (code de sortie 1) ; une coupe broche arrêtée, une coupe sans avance et une avance au-dessus d'une limite sont des avertissements.
 * **Ce que le lecteur n'a pas compris** (compensation de rayon, cycles fixes, une ligne abîmée) apparaît comme une alerte avec sa ligne, si bien qu'un programme mal lu n'est jamais déclaré propre.
+* **Arcs, `--strict` et codes qui déplacent l'origine :** les limites de la table et les brides sont testées le long de l'arc d'un G2 ou G3, pas le long de sa corde ; `--strict` transforme chaque avertissement en alerte (code de sortie 1), pour un flux qui utilise le code de sortie comme barrière avant la machine ; un programme avec G92, G53, G28, G30 ou G10 est signalé au lieu de passer pour propre.
 
 ## 🧩 Rôle dans EH3D
 

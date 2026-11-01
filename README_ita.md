@@ -58,6 +58,7 @@ Ogni riga è una parte di questo repository e il semaforo dice a che punto è og
 * **Il tempo** (`src/timeline.rs`): ogni movimento è un trapezio di velocità da fermo a fermo con l'accelerazione e la velocità rapida della macchina; gli archi si misurano lungo l'arco, un taglio senza avanzamento ne usa uno predefinito e il totale si divide in taglio e rapido. È un limite superiore: un controllore reale non si ferma tra i movimenti.
 * **Gli avvisi** (`src/checks.rs`): un movimento rapido (G0) nel materiale o di lato sotto la superficie, un movimento fuori dal piano, una Z sotto la più bassa della macchina e una testa che passa sopra un morsetto sotto la sua altezza sono allarmi (codice di uscita 1); un taglio a mandrino fermo, un taglio senza avanzamento e un avanzamento sopra un limite sono avvertenze.
 * **Ciò che il lettore non ha capito** (compensazione del raggio, cicli fissi, una riga danneggiata) appare come allarme con la sua riga, così un programma letto male non è mai dato per pulito.
+* **Archi, `--strict` e codici che spostano l'origine:** i limiti del piano e i morsetti sono verificati lungo l'arco di un G2 o G3, non lungo la sua corda; `--strict` trasforma ogni avviso in allarme (codice di uscita 1), per un flusso che usa il codice di uscita come barriera prima della macchina; un programma con G92, G53, G28, G30 o G10 viene segnalato invece di passare per pulito.
 
 ## 🧩 Ruolo in EH3D
 

@@ -58,6 +58,7 @@ Jede Zeile ist ein Teil dieses Repositorys, und die Ampel sagt, wie weit er heut
 * **Die Zeit** (`src/timeline.rs`): Jede Bewegung ist ein Geschwindigkeitstrapez von Ruhe zu Ruhe mit Beschleunigung und Eilganggeschwindigkeit der Maschine; Bögen werden entlang des Bogens gemessen, ein Schnitt ohne Vorschub nutzt einen Standardwert, und die Summe wird in Schnitt und Eilgang geteilt. Das ist eine Obergrenze: eine echte Steuerung hält zwischen Bewegungen nicht an.
 * **Die Alarme** (`src/checks.rs`): ein Eilgang ins Material oder seitlich unter der Oberfläche, eine Bewegung außerhalb des Tisches, ein Z unter dem tiefsten der Maschine und ein Kopf, der unter ihrer Höhe über einen Spanner fährt, sind Alarme (Exit-Code 1); ein Schnitt bei stehender Spindel, ein Schnitt ohne Vorschub und ein Vorschub über einem Limit sind Warnungen.
 * **Was der Leser nicht verstand** (Radiuskorrektur, Bohrzyklen, eine beschädigte Zeile), erscheint als Alarm mit seiner Zeile, sodass ein falsch gelesenes Programm nie als sauber gilt.
+* **Bögen, `--strict` und die Codes, die den Nullpunkt verschieben:** Tischgrenzen und Spannpratzen werden entlang des Bogens eines G2 oder G3 geprüft, nicht entlang seiner Sehne; `--strict` macht jede Warnung zum Alarm (Exit-Code 1), für einen Ablauf, der den Exit-Code als Schranke vor der Maschine nutzt; ein Programm mit G92, G53, G28, G30 oder G10 wird gemeldet, statt als sauber durchzugehen.
 
 ## 🧩 Rolle in EH3D
 
