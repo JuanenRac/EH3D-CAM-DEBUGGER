@@ -8,6 +8,7 @@ All notable changes to this project are documented here.
 - **The program is read from its bytes:** `--max-bytes N` refuses a file over the limit (256 MiB by default), and text that is not UTF-8 is read as Latin-1 with a finding that carries the code `input-not-utf8`.
 - **The findings of the reader carry their stable code** (`[unknown-g-code]`), and `--ignore CODE[,CODE]` (or `ignore_codes` in the limits) leaves out the notices of those codes; a misspelt code is an error.
 - **Tests that run what the README and the scripts promise:** the sample of `run.sh`, `run.bat` and the README is the same command, and it is run on the files of `examples/`.
+- **The banner of the README** shows the role and the technologies of this program (it showed the text of the shared library).
 
 ## [0.0.2] - Arcs checked along the arc, a strict mode and a report of the codes that move the origin
 
