@@ -97,6 +97,32 @@
             "zh": "库和命令行的测试",
             "pt": "testes da biblioteca e da linha de comandos"
           }
+        },
+        {
+          "name": "reading.rs",
+          "desc": {
+            "en": "tests of reading files: the size limit, text that is not UTF-8, notices by code",
+            "es": "pruebas de lectura de ficheros: el límite de tamaño, texto que no es UTF-8, avisos por código",
+            "de": "Tests zum Lesen von Dateien: Größenlimit, Text ohne UTF-8, Meldungen nach Code",
+            "fr": "tests de lecture des fichiers : la limite de taille, le texte non UTF-8, les avis par code",
+            "it": "test di lettura dei file: il limite di dimensione, testo non UTF-8, avvisi per codice",
+            "ja": "ファイル読み込みのテスト：サイズ上限、UTF-8以外のテキスト、コード別の通知",
+            "zh": "文件读取测试：大小限制、非 UTF-8 文本、按代码的提示",
+            "pt": "testes de leitura de ficheiros: o limite de tamanho, texto que não é UTF-8, avisos por código"
+          }
+        },
+        {
+          "name": "readme.rs",
+          "desc": {
+            "en": "tests that run what the README and the run scripts promise",
+            "es": "pruebas que ejecutan lo que prometen el README y los scripts run",
+            "de": "Tests, die ausführen, was README und run-Skripte versprechen",
+            "fr": "tests qui exécutent ce que promettent le README et les scripts run",
+            "it": "test che eseguono ciò che promettono il README e gli script run",
+            "ja": "READMEとrunスクリプトが約束する内容を実行するテスト",
+            "zh": "运行 README 和 run 脚本所承诺内容的测试",
+            "pt": "testes que executam o que o README e os scripts run prometem"
+          }
         }
       ]
     },

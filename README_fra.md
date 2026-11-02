@@ -18,7 +18,7 @@
 
 ---
 
-**Vérification d'honnêteté - ce qui fonctionne aujourd'hui :** une bibliothèque Rust et un programme en ligne de commande (`eh3d-camdebug`) avec 13 tests exécutés sur un ordinateur : calcule le temps d'un programme G-code et trouve les mouvements rapides dans la matière, les mouvements hors de la table, les coupes broche arrêtée et les têtes au-dessus de pinces. Il n'a pas encore de fenêtre, n'a pas été essayé sur une machine et n'a pas été vérifié sur une collection de fichiers réels.
+**Vérification d'honnêteté - ce qui fonctionne aujourd'hui :** une bibliothèque Rust et un programme en ligne de commande (`eh3d-camdebug`) avec 23 tests exécutés sur un ordinateur : calcule le temps d'un programme G-code et trouve les mouvements rapides dans la matière, les mouvements hors de la table, les coupes broche arrêtée et les têtes au-dessus de pinces. Il n'a pas encore de fenêtre, n'a pas été essayé sur une machine et n'a pas été vérifié sur une collection de fichiers réels.
 
 ---
 
@@ -31,7 +31,7 @@
 |---|---|
 | Version | `0.0.2` |
 | Maturité | Échafaudage |
-| Tests | 13 |
+| Tests | 23 |
 | Pile technique | Rust |
 | Sur du matériel réel | Non essayé : rien ici n'a fonctionné sur une machine |
 
@@ -47,7 +47,7 @@ Chaque ligne est une partie de ce dépôt et le feu dit où elle en est aujourd'
 |---|---|---|
 | Cœur | 🟡 | calcule le temps d'un programme G-code et trouve les mouvements rapides dans la matière, les mouvements hors de la table, les coupes broche arrêtée et les têtes au-dessus de pinces ; testé sur un ordinateur avec des entrées normales et abîmées, pas avec une collection de fichiers réels. |
 | Ligne de commande | 🟡 | `eh3d-camdebug` exécute les mêmes fonctions que la bibliothèque et affiche le résultat ; chaque erreur revient sous forme de message et de code de sortie non nul. |
-| Tests | 🟡 | 13 tests passent (`cargo test`), avec des cas normaux, des cas limites et des entrées abîmées. |
+| Tests | 🟡 | 23 tests passent (`cargo test`), avec des cas normaux, des cas limites et des entrées abîmées. |
 | Sécurité | 🟡 | Rust sûr et simple (`forbid(unsafe_code)`) : rien ne panique sur les fichiers reçus et une mauvaise valeur est une erreur avec sa raison ; pas de revue indépendante. |
 | Fenêtre | 🔴 | Prévu : la fenêtre egui commune à la suite ; aujourd'hui il n'y a que la ligne de commande. |
 | Matériel réel | 🔴 | Non essayé : rien ici n'a été exécuté sur une machine. |
@@ -59,6 +59,7 @@ Chaque ligne est une partie de ce dépôt et le feu dit où elle en est aujourd'
 * **Les alertes** (`src/checks.rs`) : un mouvement rapide (G0) dans la matière ou de côté sous la surface, un mouvement hors de la table, un Z sous le plus bas de la machine et une tête qui passe au-dessus d'une pince sous sa hauteur sont des alertes (code de sortie 1) ; une coupe broche arrêtée, une coupe sans avance et une avance au-dessus d'une limite sont des avertissements.
 * **Ce que le lecteur n'a pas compris** (compensation de rayon, cycles fixes, une ligne abîmée) apparaît comme une alerte avec sa ligne, si bien qu'un programme mal lu n'est jamais déclaré propre.
 * **Arcs, `--strict` et codes qui déplacent l'origine :** les limites de la table et les brides sont testées le long de l'arc d'un G2 ou G3, pas le long de sa corde ; `--strict` transforme chaque avertissement en alerte (code de sortie 1), pour un flux qui utilise le code de sortie comme barrière avant la machine ; un programme avec G92, G53, G28, G30 ou G10 est signalé au lieu de passer pour propre.
+* **Lecture et avis par code :** le programme est lu depuis ses octets (`--max-bytes N` refuse un fichier au-dessus de la limite, 256 MiB par défaut ; le texte non UTF-8 est lu comme du Latin-1 et signalé avec le code `input-not-utf8`) ; chaque constat du lecteur montre son code stable, et `--ignore CODE[,CODE]` omet les avis de ces codes.
 
 ## 🧩 Rôle dans EH3D
 
@@ -102,7 +103,9 @@ EH3D-CAM-DEBUGGER/
 │   ├── main.rs                                  la ligne de commande
 │   └── timeline.rs                              une partie de la logique
 ├── tests/
-│   └── debugger.rs                              tests de la bibliothèque et de la ligne de commande
+│   ├── debugger.rs                              tests de la bibliothèque et de la ligne de commande
+│   ├── reading.rs                               tests de lecture des fichiers : la limite de taille, le texte non UTF-8, les avis par code
+│   └── readme.rs                                tests qui exécutent ce que promettent le README et les scripts run
 ├── examples/
 │   └── sample.nc                                un exemple pour essayer le programme
 ├── docs/
@@ -134,7 +137,7 @@ cargo run --release -- check examples/sample.nc --table 100,80 --clamp 20,-5,30,
 
 ## 🧪 Tests
 
-La suite compte 13 tests (`cargo test`, exécutés sous Windows et Linux dans le CI). Ils vérifient les cas normaux, les cas limites et les entrées abîmées : fichiers vides, bruit et fichiers coupés ne font jamais paniquer. Le CI exécute aussi `cargo fmt --check`, `cargo clippy` avec les avertissements comme erreurs et `python -I tools/ci_validate.py`.
+La suite compte 23 tests (`cargo test`, exécutés sous Windows et Linux dans le CI). Ils vérifient les cas normaux, les cas limites et les entrées abîmées : fichiers vides, bruit et fichiers coupés ne font jamais paniquer. Le CI exécute aussi `cargo fmt --check`, `cargo clippy` avec les avertissements comme erreurs et `python -I tools/ci_validate.py`.
 
 ## 🏗️ Compilation et publication
 

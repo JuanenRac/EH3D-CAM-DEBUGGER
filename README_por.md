@@ -18,7 +18,7 @@
 
 ---
 
-**Verificação de honestidade - o que funciona hoje:** uma biblioteca Rust e um programa de linha de comandos (`eh3d-camdebug`) com 13 testes que correm num computador: calcula o tempo de um programa G-code e encontra movimentos rápidos para o material, movimentos fora da mesa, cortes com o fuso parado e cabeçotes sobre grampos. Ainda não tem janela, não foi experimentado numa máquina e não foi verificado com uma coleção de ficheiros reais.
+**Verificação de honestidade - o que funciona hoje:** uma biblioteca Rust e um programa de linha de comandos (`eh3d-camdebug`) com 23 testes que correm num computador: calcula o tempo de um programa G-code e encontra movimentos rápidos para o material, movimentos fora da mesa, cortes com o fuso parado e cabeçotes sobre grampos. Ainda não tem janela, não foi experimentado numa máquina e não foi verificado com uma coleção de ficheiros reais.
 
 ---
 
@@ -31,7 +31,7 @@
 |---|---|
 | Versão | `0.0.2` |
 | Maturidade | Estrutura inicial |
-| Testes | 13 |
+| Testes | 23 |
 | Tecnologias | Rust |
 | Em hardware real | Não experimentado: nada disto correu numa máquina |
 
@@ -47,7 +47,7 @@ Cada linha é uma parte deste repositório e a luz diz até onde chega hoje. É 
 |---|---|---|
 | Núcleo | 🟡 | calcula o tempo de um programa G-code e encontra movimentos rápidos para o material, movimentos fora da mesa, cortes com o fuso parado e cabeçotes sobre grampos; testado num computador com entradas normais e danificadas, não com uma coleção de ficheiros reais. |
 | Linha de comandos | 🟡 | `eh3d-camdebug` executa as mesmas funções da biblioteca e imprime o resultado; cada erro volta como mensagem e código de saída diferente de zero. |
-| Testes | 🟡 | 13 testes passam (`cargo test`), com casos normais, casos-limite e entradas danificadas. |
+| Testes | 🟡 | 23 testes passam (`cargo test`), com casos normais, casos-limite e entradas danificadas. |
 | Segurança | 🟡 | Rust seguro e simples (`forbid(unsafe_code)`): nada entra em pânico com os ficheiros recebidos e um valor mau é um erro com o seu motivo; sem revisão independente. |
 | Janela | 🔴 | Previsto: a janela egui comum à suíte; hoje existe apenas a linha de comandos. |
 | Hardware real | 🔴 | Não experimentado: nada disto foi executado numa máquina. |
@@ -59,6 +59,7 @@ Cada linha é uma parte deste repositório e a luz diz até onde chega hoje. É 
 * **Os alertas** (`src/checks.rs`): um movimento rápido (G0) para o material ou de lado abaixo da superfície, um movimento fora da mesa, um Z abaixo do mais baixo da máquina e um cabeçote que passa sobre um grampo abaixo da sua altura são alertas (código de saída 1); um corte com o fuso parado, um corte sem avanço e um avanço acima de um limite são avisos.
 * **O que o leitor não conseguiu entender** (compensação de raio, ciclos fixos, uma linha danificada) aparece como alerta com a sua linha, de modo que um programa mal lido nunca é dado como limpo.
 * **Arcos, `--strict` e os códigos que movem a origem:** os limites da mesa e as grampos verificam-se ao longo do arco de um G2 ou G3, não da sua corda; `--strict` transforma cada aviso em alerta (código de saída 1), para um fluxo que usa o código de saída como barreira antes da máquina; um programa com G92, G53, G28, G30 ou G10 é assinalado em vez de passar por limpo.
+* **Leitura e avisos por código:** o programa é lido a partir dos seus bytes (`--max-bytes N` recusa um ficheiro acima do limite, 256 MiB por omissão; o texto que não é UTF-8 é lido como Latin-1 e indicado com o código `input-not-utf8`); cada achado do leitor mostra o seu código estável, e `--ignore CODE[,CODE]` omite os avisos desses códigos.
 
 ## 🧩 Papel no EH3D
 
@@ -102,7 +103,9 @@ EH3D-CAM-DEBUGGER/
 │   ├── main.rs                                  a linha de comandos
 │   └── timeline.rs                              uma parte da lógica
 ├── tests/
-│   └── debugger.rs                              testes da biblioteca e da linha de comandos
+│   ├── debugger.rs                              testes da biblioteca e da linha de comandos
+│   ├── reading.rs                               testes de leitura de ficheiros: o limite de tamanho, texto que não é UTF-8, avisos por código
+│   └── readme.rs                                testes que executam o que o README e os scripts run prometem
 ├── examples/
 │   └── sample.nc                                um exemplo para experimentar o programa
 ├── docs/
@@ -134,7 +137,7 @@ cargo run --release -- check examples/sample.nc --table 100,80 --clamp 20,-5,30,
 
 ## 🧪 Testes
 
-O conjunto tem 13 testes (`cargo test`, executados em Windows e Linux no CI). Verificam os casos normais, os casos-limite e as entradas danificadas: ficheiros vazios, lixo e ficheiros cortados nunca provocam pânico. O CI executa ainda `cargo fmt --check`, `cargo clippy` com avisos como erros e `python -I tools/ci_validate.py`.
+O conjunto tem 23 testes (`cargo test`, executados em Windows e Linux no CI). Verificam os casos normais, os casos-limite e as entradas danificadas: ficheiros vazios, lixo e ficheiros cortados nunca provocam pânico. O CI executa ainda `cargo fmt --check`, `cargo clippy` com avisos como erros e `python -I tools/ci_validate.py`.
 
 ## 🏗️ Compilação e publicação
 

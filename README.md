@@ -18,7 +18,7 @@
 
 ---
 
-**Honesty check - what actually runs today:** a Rust library and a command line program (`eh3d-camdebug`) with 13 tests that run on a computer: works out the time of a G-code program and finds rapid moves into the material, moves outside the table, cuts with the spindle off and heads over clamps. It has no window yet, it has not been tried on a machine and it has not been checked against a collection of real files.
+**Honesty check - what actually runs today:** a Rust library and a command line program (`eh3d-camdebug`) with 23 tests that run on a computer: works out the time of a G-code program and finds rapid moves into the material, moves outside the table, cuts with the spindle off and heads over clamps. It has no window yet, it has not been tried on a machine and it has not been checked against a collection of real files.
 
 ---
 
@@ -31,7 +31,7 @@
 |---|---|
 | Version | `0.0.2` |
 | Maturity | Scaffolding |
-| Tests | 13 |
+| Tests | 23 |
 | Stack | Rust |
 | On real hardware | Not tried: nothing here has run on a machine |
 
@@ -47,7 +47,7 @@ Each line is one part of this repository and the light says how far it is today.
 |---|---|---|
 | Core | 🟡 | works out the time of a G-code program and finds rapid moves into the material, moves outside the table, cuts with the spindle off and heads over clamps; tested on a computer with normal and damaged input, not with a collection of real files. |
 | Command line | 🟡 | `eh3d-camdebug` runs the same functions as the library and prints the result; every error comes back as a message and a non-zero exit code. |
-| Tests | 🟡 | 13 tests pass (`cargo test`), with normal cases, edge cases and damaged input. |
+| Tests | 🟡 | 23 tests pass (`cargo test`), with normal cases, edge cases and damaged input. |
 | Security | 🟡 | Plain safe Rust (`forbid(unsafe_code)`): nothing panics on the files it is given and a bad value is an error with its reason; no independent review. |
 | Window | 🔴 | Planned: the egui window common to the suite; today there is only the command line. |
 | Real hardware | 🔴 | Not tried: nothing here has been run on a machine. |
@@ -59,6 +59,7 @@ Each line is one part of this repository and the light says how far it is today.
 * **The alerts** (`src/checks.rs`): a rapid move (G0) into the material or sideways below the surface, a move outside the table, a Z below the lowest one of the machine, and a head that passes over a clamp below its height are alerts (exit code 1); a cut with the spindle off, a cut with no feed and a feed above a limit are warnings.
 * **What the reader could not understand** (cutter compensation, canned cycles, a damaged line) comes up as an alert with its line, so a program that was misread is never reported as clean.
 * **Arcs, `--strict` and the codes that move the origin:** the table limits and the clamps are tested along the arc of a G2 or G3, not along its chord; `--strict` makes every warning an alert (exit code 1), for a flow that uses the exit code as the barrier before the machine; a program with G92, G53, G28, G30 or G10 is reported instead of passing as clean.
+* **Reading and notices by code:** the program is read from its bytes (`--max-bytes N` refuses a file over the limit, 256 MiB by default; text that is not UTF-8 is read as Latin-1 and reported with the code `input-not-utf8`); every finding of the reader shows its stable code, and `--ignore CODE[,CODE]` leaves out the notices of those codes.
 
 ## 🧩 Role in EH3D
 
@@ -102,7 +103,9 @@ EH3D-CAM-DEBUGGER/
 │   ├── main.rs                                  the command line
 │   └── timeline.rs                              a part of the logic
 ├── tests/
-│   └── debugger.rs                              tests of the library and the command line
+│   ├── debugger.rs                              tests of the library and the command line
+│   ├── reading.rs                               tests of reading files: the size limit, text that is not UTF-8, notices by code
+│   └── readme.rs                                tests that run what the README and the run scripts promise
 ├── examples/
 │   └── sample.nc                                a sample to try the program with
 ├── docs/
@@ -134,7 +137,7 @@ cargo run --release -- check examples/sample.nc --table 100,80 --clamp 20,-5,30,
 
 ## 🧪 Testing
 
-The suite has 13 tests (`cargo test`, run on Windows and Linux in the CI). They check the normal cases, the edge cases and damaged input: empty files, garbage and cut files never panic. The CI also runs `cargo fmt --check`, `cargo clippy` with warnings as errors and `python -I tools/ci_validate.py`.
+The suite has 23 tests (`cargo test`, run on Windows and Linux in the CI). They check the normal cases, the edge cases and damaged input: empty files, garbage and cut files never panic. The CI also runs `cargo fmt --check`, `cargo clippy` with warnings as errors and `python -I tools/ci_validate.py`.
 
 ## 🏗️ Build & Release
 
