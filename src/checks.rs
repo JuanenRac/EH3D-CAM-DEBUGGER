@@ -38,6 +38,8 @@ pub struct Limits {
     /// The fastest cutting feed that makes sense, in mm/min; `None` does not check it.
     pub max_feed_mm_min: Option<f64>,
     pub clamps: Vec<Clamp>,
+    /// The codes of the notices of the reader that are not reported (see the codes of `eh3d_parser_gcode`).
+    pub ignore_codes: Vec<String>,
 }
 
 impl Default for Limits {
@@ -48,6 +50,7 @@ impl Default for Limits {
             min_z: None,
             max_feed_mm_min: None,
             clamps: Vec::new(),
+            ignore_codes: Vec::new(),
         }
     }
 }
@@ -123,17 +126,23 @@ pub fn strict(findings: &mut [Finding]) {
 pub fn check(trace: &Trace, limits: &Limits) -> Vec<Finding> {
     let mut out: Vec<Finding> = Vec::new();
     for d in &trace.diagnostics {
+        if limits.ignore_codes.iter().any(|c| c.as_str() == d.code) {
+            continue;
+        }
         match d.severity {
             Severity::Info => {}
             Severity::Warning => out.push(Finding {
                 line: d.line,
                 level: Level::Warning,
-                message: format!("the reader says: {}", d.message),
+                message: format!("the reader says: {} [{}]", d.message, d.code),
             }),
             Severity::Error => out.push(Finding {
                 line: d.line,
                 level: Level::Alert,
-                message: format!("the reader could not understand it: {}", d.message),
+                message: format!(
+                    "the reader could not understand it: {} [{}]",
+                    d.message, d.code
+                ),
             }),
         }
     }

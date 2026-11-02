@@ -4,7 +4,7 @@
 
 use eh3d_cam_debugger::checks::{check, has_alerts, strict, Clamp, Level, Limits};
 use eh3d_cam_debugger::timeline::{format_time, timeline, Machine};
-use eh3d_parser_gcode::{interpret, parse, Dialect};
+use eh3d_parser_gcode::{codes, interpret, parse_bytes_with, Dialect, InputLimits};
 use std::env;
 use std::fs;
 use std::process::ExitCode;
@@ -17,6 +17,7 @@ const HELP: &str = "eh3d-camdebug: checks a G-code program before it reaches a m
 Options: --accel MM_S2 (500)  --rapid MM_MIN (3000)  --feed MM_MIN (300, used when a cut has no feed)  --dialect grbl|marlin|planetcnc
          --table WIDTH,DEPTH  --surface Z (0)  --min-z Z  --max-feed MM_MIN  --clamp X0,Y0,X1,Y1,HEIGHT (as many as needed)
          --strict (every warning is an alert too: exit code 1 for a cut with the spindle off, for one)
+         --ignore CODE[,CODE] (leave out the notices of the reader with those codes, for example line-too-long)  --max-bytes N (the largest file, 268435456 by default)
 The time is an upper bound: every move is counted from rest to rest.";
 
 fn nums(text: &str, n: usize, what: &str) -> Result<Vec<f64>, String> {
@@ -31,9 +32,30 @@ fn nums(text: &str, n: usize, what: &str) -> Result<Vec<f64>, String> {
     Ok(v)
 }
 
-fn parse_options(args: &[String]) -> Result<(Machine, Limits, Dialect, bool), String> {
+struct Options {
+    machine: Machine,
+    limits: Limits,
+    dialect: Dialect,
+    strict: bool,
+    max_bytes: usize,
+}
+
+/// The codes of an `--ignore` value, each one checked against the codes of the reader: a misspelt code would ignore nothing.
+fn ignored_codes(value: &str) -> Result<Vec<String>, String> {
+    let mut out = Vec::new();
+    for c in value.split(',').map(str::trim).filter(|c| !c.is_empty()) {
+        if !codes::ALL.contains(&c) {
+            return Err(format!("--ignore: '{c}' is not a code of the reader"));
+        }
+        out.push(c.to_string());
+    }
+    Ok(out)
+}
+
+fn parse_options(args: &[String]) -> Result<Options, String> {
     let (mut m, mut l, mut d) = (Machine::default(), Limits::default(), Dialect::Grbl);
     let mut strict = false;
+    let mut max_bytes = InputLimits::default().max_bytes;
     let mut i = 0;
     while i < args.len() {
         if args[i] == "--strict" {
@@ -53,6 +75,8 @@ fn parse_options(args: &[String]) -> Result<(Machine, Limits, Dialect, bool), St
             "--surface" => l.surface_z = nums(&value()?, 1, "--surface")?[0],
             "--min-z" => l.min_z = Some(nums(&value()?, 1, "--min-z")?[0]),
             "--max-feed" => l.max_feed_mm_min = Some(nums(&value()?, 1, "--max-feed")?[0]),
+            "--ignore" => l.ignore_codes.extend(ignored_codes(&value()?)?),
+            "--max-bytes" => max_bytes = nums(&value()?, 1, "--max-bytes")?[0] as usize,
             "--table" => {
                 let v = nums(&value()?, 2, "--table")?;
                 l.table = Some((v[0], v[1]));
@@ -84,7 +108,13 @@ fn parse_options(args: &[String]) -> Result<(Machine, Limits, Dialect, bool), St
         i += 2;
     }
     m.validate()?;
-    Ok((m, l, d, strict))
+    Ok(Options {
+        machine: m,
+        limits: l,
+        dialect: d,
+        strict,
+        max_bytes,
+    })
 }
 
 fn run(mut args: Vec<String>) -> Result<bool, String> {
@@ -97,9 +127,17 @@ fn run(mut args: Vec<String>) -> Result<bool, String> {
         return Err(format!("{cmd} needs a G-code file"));
     }
     let file = args.remove(0);
-    let (machine, limits, dialect, strict_mode) = parse_options(&args)?;
+    let Options {
+        machine,
+        limits,
+        dialect,
+        strict: strict_mode,
+        max_bytes,
+    } = parse_options(&args)?;
     let bytes = fs::read(&file).map_err(|e| format!("{file}: {e}"))?;
-    let trace = interpret(&parse(&String::from_utf8_lossy(&bytes), dialect));
+    let program = parse_bytes_with(&bytes, dialect, &InputLimits { max_bytes })
+        .map_err(|e| format!("{file}: {e}"))?;
+    let trace = interpret(&program);
     let tl = timeline(&trace, &machine)?;
     match cmd.as_str() {
         "check" => {
