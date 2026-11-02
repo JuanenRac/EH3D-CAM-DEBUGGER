@@ -468,7 +468,6 @@ fn two_clamps_are_numbered_and_the_one_that_is_hit_is_named() {
 }
 
 #[test]
-#[ignore = "bug: a clamp narrower than the 0.5 mm step of the sampling can be stepped over by a long move without any finding"]
 fn a_thin_clamp_between_two_samples_of_a_long_move_is_still_found() {
     let c = Clamp {
         x0: 40.1,
@@ -760,4 +759,24 @@ fn a_program_with_non_ascii_comments_and_a_byte_order_mark_is_checked() {
     );
     let (c, o, e) = camdebug(&["check", f.to_str().unwrap()]);
     assert_eq!(c, Some(0), "{o} {e}");
+}
+
+#[test]
+fn a_thin_clamp_is_found_on_a_diagonal_move_and_not_when_the_head_is_above_it() {
+    let clamp = |height_mm| Limits {
+        clamps: vec![Clamp {
+            x0: 49.97,
+            y0: 49.0,
+            x1: 50.0,
+            y1: 51.0,
+            height_mm,
+        }],
+        ..Limits::default()
+    };
+    let program = "G21 G90\nM3\nG0 X0 Y0 Z3\nG0 X100 Y100\n";
+    assert_eq!(findings(program, &clamp(6.0)).len(), 1);
+    // the head travels at Z 3, above a clamp of 2 mm
+    assert!(findings(program, &clamp(2.0)).is_empty());
+    // a move that runs next to the clamp without touching it
+    assert!(findings("G21 G90\nM3\nG0 X0 Y0 Z3\nG0 X100 Y2\n", &clamp(6.0)).is_empty());
 }

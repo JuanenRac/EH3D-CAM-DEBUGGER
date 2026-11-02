@@ -58,12 +58,32 @@ impl Default for Limits {
 const SAMPLE_MM: f64 = 0.5;
 const EPS: f64 = 1e-9;
 
-fn over_clamp(c: &Clamp, x: f64, y: f64, z: f64) -> bool {
-    x >= c.x0.min(c.x1)
-        && x <= c.x0.max(c.x1)
-        && y >= c.y0.min(c.y1)
-        && y <= c.y0.max(c.y1)
-        && z < c.height_mm
+/// Where (x, y) the straight piece from `a` to `b` (x, y, z) enters the clamp below its height, if it does: an exact test of the
+/// segment against the box (no sampling), so a clamp thinner than any step is still found.
+fn segment_over_clamp(c: &Clamp, a: (f64, f64, f64), b: (f64, f64, f64)) -> Option<(f64, f64)> {
+    let (mut t0, mut t1) = (0.0_f64, 1.0_f64);
+    for (p0, p1, lo, hi) in [
+        (a.0, b.0, c.x0.min(c.x1), c.x0.max(c.x1)),
+        (a.1, b.1, c.y0.min(c.y1), c.y0.max(c.y1)),
+    ] {
+        let d = p1 - p0;
+        if d.abs() < 1e-15 {
+            if p0 < lo || p0 > hi {
+                return None;
+            }
+        } else {
+            let (ta, tb) = ((lo - p0) / d, (hi - p0) / d);
+            t0 = t0.max(ta.min(tb));
+            t1 = t1.min(ta.max(tb));
+            if t0 > t1 {
+                return None;
+            }
+        }
+    }
+    // z is linear along the piece: its lowest point inside the box is at one end of the part that is inside
+    let z_at = |t: f64| a.2 + (b.2 - a.2) * t;
+    (z_at(t0).min(z_at(t1)) < c.height_mm)
+        .then_some((a.0 + (b.0 - a.0) * t0, a.1 + (b.1 - a.1) * t0))
 }
 
 /// The sweep of an arc: its centre, its radius and the angle it starts and ends at (negative sweep for G2). `None` for a straight move or a degenerate arc.
@@ -207,12 +227,18 @@ pub fn check(trace: &Trace, limits: &Limits) -> Vec<Finding> {
             }
         }
         if !limits.clamps.is_empty() {
-            let n = ((plan_length(s) / SAMPLE_MM).ceil() as usize).clamp(1, 20_000);
-            'segment: for k in 0..=n {
-                let (x, y, z) = point_at(s, k as f64 / n as f64);
+            // a straight move is tested whole; an arc as chords no longer than the step of the sampling
+            let n = if arc_of(s).is_some() {
+                ((plan_length(s) / SAMPLE_MM).ceil() as usize).clamp(1, 20_000)
+            } else {
+                1
+            };
+            'segment: for k in 0..n {
+                let a = point_at(s, k as f64 / n as f64);
+                let b = point_at(s, (k + 1) as f64 / n as f64);
                 for (i, c) in limits.clamps.iter().enumerate() {
-                    if over_clamp(c, x, y, z) {
-                        out.push(Finding { line: s.line, level: Level::Alert, message: format!("the head passes over the clamp {} at ({x:.2}, {y:.2}) with Z {z:.2} below its height {:.2}", i + 1, c.height_mm) });
+                    if let Some((x, y)) = segment_over_clamp(c, a, b) {
+                        out.push(Finding { line: s.line, level: Level::Alert, message: format!("the head passes over the clamp {} at ({x:.2}, {y:.2}) with Z below its height {:.2}", i + 1, c.height_mm) });
                         break 'segment;
                     }
                 }

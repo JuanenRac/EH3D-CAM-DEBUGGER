@@ -3,6 +3,7 @@
 All notable changes to this project are documented here.
 
 ## [Unreleased]
+- **A thin clamp is no longer stepped over:** a straight move is tested against the box of each clamp exactly (segment against box, with the height at the point of entry) instead of every half millimetre, so a clamp thinner than the step is found by a long move; arcs are tested chord by chord.
 - **More tests:** the checks are tried at the exact limits of the table, the lowest Z, the feed and the height of a clamp; the time of a move at the point where the ramp and the triangle meet; arcs, helices and the exit codes of every command of the command line. The findings now come in the order of the program (the notices of the reader came first), and a time just under a minute is no longer written as 60.0 s.
 
 ## [0.0.3] - Reading from bytes and notices by code
