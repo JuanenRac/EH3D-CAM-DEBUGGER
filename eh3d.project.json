@@ -2,7 +2,7 @@
   "schema_version": "1.1",
   "ecosystem": "EH3D",
   "name": "EH3D-CAM-DEBUGGER",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "role": "tool",
   "stack": "rust",
   "technologies": [
@@ -19,7 +19,7 @@
     "EH3D-CORE-LIBS"
   ],
   "build": "cargo build --release; cargo test",
-  "notes": "Scaffolding v0.0.2: a library and a command line that read a G-code program with the interpreter of EH3D-CORE-LIBS, work out its time with the acceleration of the machine (an upper bound: every move from rest to rest) and look for what would hurt: a rapid move into the material, a move outside the table or below the lowest Z, a cut with the spindle off or with no feed, a feed above a limit and a head that passes over a clamp. No 3D simulation and no removal of material yet; nothing has been tried on a machine.",
+  "notes": "Scaffolding v0.0.3: a library and a command line that read a G-code program with the interpreter of EH3D-CORE-LIBS, work out its time with the acceleration of the machine (an upper bound: every move from rest to rest) and look for what would hurt: a rapid move into the material, a move outside the table or below the lowest Z, a cut with the spindle off or with no feed, a feed above a limit and a head that passes over a clamp. No 3D simulation and no removal of material yet; nothing has been tried on a machine.",
   "native_version": {
     "file": "Cargo.toml",
     "pattern": "^version\\s*=\\s*\"(\\d+\\.\\d+\\.\\d+)\""
