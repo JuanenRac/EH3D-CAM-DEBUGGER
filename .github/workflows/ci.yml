@@ -9,6 +9,10 @@ on:
 permissions:
   contents: read
 
+env:
+  # The tag of each sibling repository this one is built against (name=tag, separated by spaces); a sibling that is not listed is taken at main.
+  SIBLING_REFS: "EH3D-CORE-LIBS=v0.0.3"
+
 jobs:
   validate:
     name: Validate the repository
@@ -36,11 +40,33 @@ jobs:
       - uses: actions/checkout@v5
         with:
           path: EH3D-CAM-DEBUGGER
-      - name: Check out the sibling EH3D-CORE-LIBS (a path dependency)
-        uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
         with:
-          repository: JuanenRac/EH3D-CORE-LIBS
-          path: EH3D-CORE-LIBS
+          python-version: "3.12"
+      - name: Check out the sibling repositories named in depends_on of the manifest
+        shell: bash
+        run: |
+          python - <<'PY'
+          import json
+          import os
+          import subprocess
+          from pathlib import Path
+
+          owner, name = os.environ["GITHUB_REPOSITORY"].split("/")
+          refs = dict(item.split("=", 1) for item in os.environ.get("SIBLING_REFS", "").split())
+          pending, seen = [name], {name}
+          while pending:
+              manifest = json.loads(Path(pending.pop(), "eh3d.project.json").read_text(encoding="utf-8"))
+              for dep in manifest.get("depends_on") or []:
+                  if dep in seen:
+                      continue
+                  seen.add(dep)
+                  ref = refs.get(dep)
+                  command = ["git", "-c", "advice.detachedHead=false", "clone", "--quiet", "--depth", "1"] + (["--branch", ref] if ref else [])
+                  subprocess.run(command + [f"https://github.com/{owner}/{dep}.git", dep], check=True)
+                  print(f"{dep} at {ref or 'main'}")
+                  pending.append(dep)
+          PY
       - name: Rust toolchain
         run: rustup toolchain install stable --profile minimal --component rustfmt,clippy
       - name: Format
@@ -51,4 +77,48 @@ jobs:
         working-directory: EH3D-CAM-DEBUGGER
       - name: Tests
         run: cargo test --all-targets
+        working-directory: EH3D-CAM-DEBUGGER
+
+  main-against-main:
+    name: Siblings at main
+    # Builds this repository against the main branch of every sibling to see a break coming before the siblings are tagged; it does not hold a merge back.
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    env:
+      SIBLING_REFS: ""
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          path: EH3D-CAM-DEBUGGER
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - name: Check out the sibling repositories named in depends_on of the manifest
+        shell: bash
+        run: |
+          python - <<'PY'
+          import json
+          import os
+          import subprocess
+          from pathlib import Path
+
+          owner, name = os.environ["GITHUB_REPOSITORY"].split("/")
+          refs = dict(item.split("=", 1) for item in os.environ.get("SIBLING_REFS", "").split())
+          pending, seen = [name], {name}
+          while pending:
+              manifest = json.loads(Path(pending.pop(), "eh3d.project.json").read_text(encoding="utf-8"))
+              for dep in manifest.get("depends_on") or []:
+                  if dep in seen:
+                      continue
+                  seen.add(dep)
+                  ref = refs.get(dep)
+                  command = ["git", "-c", "advice.detachedHead=false", "clone", "--quiet", "--depth", "1"] + (["--branch", ref] if ref else [])
+                  subprocess.run(command + [f"https://github.com/{owner}/{dep}.git", dep], check=True)
+                  print(f"{dep} at {ref or 'main'}")
+                  pending.append(dep)
+          PY
+      - name: Rust toolchain
+        run: rustup toolchain install stable --profile minimal
+      - name: Build against the sibling main branches
+        run: cargo check --all-targets
         working-directory: EH3D-CAM-DEBUGGER
