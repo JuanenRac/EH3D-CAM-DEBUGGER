@@ -219,6 +219,8 @@ pub fn check(trace: &Trace, limits: &Limits) -> Vec<Finding> {
             }
         }
     }
+    // the notices of the reader were collected first: put every finding in the order of the program (a stable sort keeps the order inside a line)
+    out.sort_by_key(|f| f.line);
     out.dedup_by(|a, b| a.line == b.line && a.message == b.message);
     out
 }

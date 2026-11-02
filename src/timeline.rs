@@ -136,7 +136,8 @@ pub fn format_time(seconds: f64) -> String {
     if !seconds.is_finite() || seconds < 0.0 {
         return "-".to_string();
     }
-    if seconds < 60.0 {
+    // below 59.95 s the text with one decimal still says less than a minute
+    if seconds < 59.95 {
         return format!("{seconds:.1} s");
     }
     let total = seconds.round() as u64;

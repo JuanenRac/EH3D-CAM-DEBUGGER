@@ -3,6 +3,7 @@
 All notable changes to this project are documented here.
 
 ## [Unreleased]
+- **More tests:** the checks are tried at the exact limits of the table, the lowest Z, the feed and the height of a clamp; the time of a move at the point where the ramp and the triangle meet; arcs, helices and the exit codes of every command of the command line. The findings now come in the order of the program (the notices of the reader came first), and a time just under a minute is no longer written as 60.0 s.
 
 ## [0.0.3] - Reading from bytes and notices by code
 - **The CI builds against the tag of each sibling:** the sibling repositories are read from `depends_on` of the manifest (the ones they need in turn included) and checked out at the tag the repository is built from, so a build does not move when a sibling changes; a separate job, `Siblings at main`, builds against the main branch of every sibling to show a break before the sibling is tagged and does not hold a merge.
