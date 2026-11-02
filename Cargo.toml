@@ -1,6 +1,6 @@
 [package]
 name = "eh3d-cam-debugger"
-version = "0.0.1"
+version = "0.0.2"
 edition = "2021"
 rust-version = "1.75"
 description = "Checks a G-code program before it reaches a machine: the time it takes, rapid moves into the material, moves outside the table, cuts with the spindle off and heads over clamps"
