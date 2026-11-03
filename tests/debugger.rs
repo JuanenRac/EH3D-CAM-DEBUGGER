@@ -719,8 +719,11 @@ fn bad_options_are_mistakes_that_name_the_option() {
         assert_eq!(c, Some(2), "{args:?}");
         assert!(e.contains(word), "{args:?}: {e}");
     }
-    // an unknown command is only noticed once the file has been read: it is still a mistake
+    // an unknown command is refused before the file is read
     assert_eq!(camdebug(&["frobnicate", p]).0, Some(2));
+    let (c, _, e) = camdebug(&["frobnicate", "no-such-file.nc"]);
+    assert_eq!(c, Some(2));
+    assert!(e.contains("unknown command"), "{e}");
 }
 
 #[test]

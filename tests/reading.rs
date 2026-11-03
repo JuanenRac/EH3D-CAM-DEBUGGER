@@ -78,3 +78,32 @@ fn the_command_line_applies_the_limit_the_encoding_and_the_filter() {
     assert!(err.contains("not a code"), "{err}");
     let _ = fs::remove_dir_all(&dir);
 }
+
+#[test]
+fn the_refusal_of_a_program_over_the_limit_is_written_in_the_language_of_the_system() {
+    let dir = std::env::temp_dir().join(format!("eh3d_camdebug_lang_{}", std::process::id()));
+    fs::create_dir_all(&dir).unwrap();
+    let file = dir.join("p.nc");
+    fs::write(&file, PROGRAM).unwrap();
+    let f = file.to_str().unwrap();
+    for (lang, word) in [
+        ("en", "above the limit"),
+        ("es", "supera el límite"),
+        ("de", "überschreitet die Grenze"),
+        ("fr", "dépasse la limite"),
+        ("it", "supera il limite"),
+        ("ja", "上限を超えています"),
+        ("zh", "文件超过上限"),
+        ("pt", "excede o limite"),
+    ] {
+        let out = Command::new(env!("CARGO_BIN_EXE_eh3d-camdebug"))
+            .args(["check", f, "--max-bytes", "10"])
+            .env("LC_ALL", lang)
+            .output()
+            .unwrap();
+        let err = String::from_utf8_lossy(&out.stderr).into_owned();
+        assert_eq!(out.status.code(), Some(2), "{lang}: {err}");
+        assert!(err.contains(word), "{lang}: {err}");
+    }
+    let _ = fs::remove_dir_all(&dir);
+}

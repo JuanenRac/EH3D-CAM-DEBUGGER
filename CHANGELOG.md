@@ -3,6 +3,8 @@
 All notable changes to this project are documented here.
 
 ## [Unreleased]
+- **Unknown commands first:** an unknown command is refused before the file is read.
+- **Limited reading:** the program is refused by its size before it is read into memory, with the message in the eight languages.
 - **Waits are counted:** the dwells of `G4` are added apart from the moves in the time report, so a program with a wait at every hole no longer understates its time.
 - **The workflows are hardened:** every action is pinned by its commit with its version in a comment, and the checkouts keep no credentials.
 - **More tests:** the times of the moves and how they are written, the machine that is refused, the length of arcs and helices, and the findings that become alerts.

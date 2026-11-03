@@ -4,9 +4,11 @@
 
 use eh3d_cam_debugger::checks::{check, has_alerts, strict, Clamp, Level, Limits};
 use eh3d_cam_debugger::timeline::{dwell_s, format_time, timeline, Machine};
-use eh3d_parser_gcode::{codes, interpret, parse_bytes_with, Dialect, InputLimits};
+use eh3d_parser_gcode::{
+    codes, interpret, parse_bytes_with, read_file_limited, Dialect, InputError, InputLimits,
+    ReadError,
+};
 use std::env;
-use std::fs;
 use std::process::ExitCode;
 
 const HELP: &str = "eh3d-camdebug: checks a G-code program before it reaches a machine
@@ -117,12 +119,55 @@ fn parse_options(args: &[String]) -> Result<Options, String> {
     })
 }
 
+/// The language of the person from the variables of the system (`en`, `es`, `de`, `fr`, `it`, `ja`, `zh`, `pt`); English when it is none of them.
+fn language() -> &'static str {
+    for var in ["LC_ALL", "LC_MESSAGES", "LANG"] {
+        if let Ok(v) = env::var(var) {
+            if v.is_empty() {
+                continue;
+            }
+            let code = v.chars().take(2).collect::<String>().to_ascii_lowercase();
+            return ["es", "de", "fr", "it", "ja", "zh", "pt"]
+                .into_iter()
+                .find(|l| *l == code)
+                .unwrap_or("en");
+        }
+    }
+    "en"
+}
+
+/// The message of a program that is over the size limit, in the language of the person.
+fn too_large(size: usize, limit: usize) -> String {
+    let human = |n: usize| {
+        if n >= 1_048_576 {
+            format!("{} MiB", n / 1_048_576)
+        } else {
+            format!("{n} bytes")
+        }
+    };
+    let (s, l) = (human(size), human(limit));
+    match language() {
+        "es" => format!("el fichero supera el límite ({s} frente a {l}); use --max-bytes si es correcto"),
+        "de" => format!("die Datei überschreitet die Grenze ({s} gegenüber {l}); --max-bytes verwenden, wenn das richtig ist"),
+        "fr" => format!("le fichier dépasse la limite ({s} contre {l}) ; utilisez --max-bytes si c'est voulu"),
+        "it" => format!("il file supera il limite ({s} contro {l}); usare --max-bytes se è corretto"),
+        "ja" => format!("ファイルが上限を超えています（{s}、上限 {l}）。正しい場合は --max-bytes を使ってください"),
+        "zh" => format!("文件超过上限（{s}，上限 {l}）；如无误，请使用 --max-bytes"),
+        "pt" => format!("o ficheiro excede o limite ({s} contra {l}); use --max-bytes se estiver correto"),
+        _ => format!("the file is above the limit ({s} against {l}); use --max-bytes if that is right"),
+    }
+}
+
 fn run(mut args: Vec<String>) -> Result<bool, String> {
     if args.is_empty() || matches!(args[0].as_str(), "help" | "--help" | "-h") {
         println!("{HELP}");
         return Ok(true);
     }
     let cmd = args.remove(0);
+    // an unknown command is refused before any file is read
+    if !matches!(cmd.as_str(), "check" | "steps") {
+        return Err(format!("{cmd}: unknown command (see help)"));
+    }
     if args.is_empty() {
         return Err(format!("{cmd} needs a G-code file"));
     }
@@ -134,7 +179,13 @@ fn run(mut args: Vec<String>) -> Result<bool, String> {
         strict: strict_mode,
         max_bytes,
     } = parse_options(&args)?;
-    let bytes = fs::read(&file).map_err(|e| format!("{file}: {e}"))?;
+    let bytes = read_file_limited(std::path::Path::new(&file), &InputLimits { max_bytes })
+        .map_err(|e| match e {
+            ReadError::TooLarge(InputError::TooLarge { size, limit }) => {
+                format!("{file}: {}", too_large(size, limit))
+            }
+            other => format!("{file}: {other}"),
+        })?;
     let program = parse_bytes_with(&bytes, dialect, &InputLimits { max_bytes })
         .map_err(|e| format!("{file}: {e}"))?;
     let trace = interpret(&program);
