@@ -2,8 +2,7 @@
   <img src="images/EH3D_BANNER.svg" alt="EH3D-CAM-DEBUGGER banner" width="100%">
 </p>
 
-# 📖 EH3D-CAM-DEBUGGER
-
+# <img src="images/brand/icon-64.png" alt="" width="40" height="40" align="absmiddle"> EH3D-CAM-DEBUGGER
 <p align="center"><a href="README.md">🇺🇸 English</a> | <a href="README_spa.md">🇪🇸 Español</a> | <a href="README_fra.md">🇫🇷 Français</a> | <a href="README_ita.md">🇮🇹 Italiano</a> | <a href="README_deu.md">🇩🇪 Deutsch</a> | <a href="README_zho.md">🇨🇳 中文</a> | 🇯🇵 <b>日本語</b> | <a href="README_por.md">🇵🇹 Português</a></p>
 
 ### 機械に届く前の G コード プログラムの最終確認：時間と警告
