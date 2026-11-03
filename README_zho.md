@@ -79,6 +79,7 @@ EH3D-CAM-DEBUGGER 是 EH3D Fabrication Suite 的一个程序。目前它以库�
 * **损坏输入的测试：** 测试还会输入空文件、乱码、巨大数字和被截断的文件，任何情况都不允许 panic。
 * **不猜测：** 没有意义的值是一个说明哪个值、为什么的错误，绝不是只是看起来正确的结果。
 * **没有 unsafe 代码：** 库和程序中都有 `#![forbid(unsafe_code)]`。
+* **缺少进给只提示一次，并能读取激光模式：** 每个没有进给的移动只给出一条发现（`--ignore feed-missing` 可使其静默），`--laser` 把带 `S0` 的 `M3` 或 `M4` 视为激光关闭。
 
 ## 🔒 安全与防护
 
@@ -196,7 +197,7 @@ README 和文本提供英语、西班牙语、法语、意大利语、德语、�
 * [EH3D-ISOCAM](https://github.com/JuanenRac/EH3D-ISOCAM): 铜箔隔离铣削
 * [EH3D-ROUTEPRO](https://github.com/JuanenRac/EH3D-ROUTEPRO): 轮廓铣削程序
 * [EH3D-AUTOLEVEL](https://github.com/JuanenRac/EH3D-AUTOLEVEL): 高度图和 G 代码修正
-* [EH3D-MOTIONCNC](https://github.com/JuanenRac/EH3D-MOTIONCNC): 机器控制程序
+* [EH3D-PHOENIX-CNC](https://github.com/JuanenRac/EH3D-PHOENIX-CNC): 机器控制程序
 
 ## 📚 文档
 

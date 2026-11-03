@@ -827,5 +827,25 @@ fn every_exit_code_of_the_convention_is_given_for_what_it_means() {
         camdebug(&["steps", warning]).0,
         Some(0),
         "steps has nothing to warn about"
+
+fn a_missing_feed_is_told_once_per_move_and_can_be_silenced_by_its_code() {
+    let program = "G21 G90\nM3 S10000\nG1 Z-1\nG1 X5\nM2\n";
+    let told = check(&trace(program), &Limits::default());
+    let lines: Vec<usize> = told
+        .iter()
+        .filter(|f| f.message.contains("feed"))
+        .map(|f| f.line)
+        .collect();
+    assert_eq!(lines, vec![3, 4], "{told:?}");
+    let silenced = check(
+        &trace(program),
+        &Limits {
+            ignore_codes: vec!["feed-missing".to_string()],
+            ..Limits::default()
+        },
+    );
+    assert!(
+        silenced.iter().all(|f| !f.message.contains("feed")),
+        "{silenced:?}"
     );
 }
