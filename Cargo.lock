@@ -4,7 +4,7 @@ version = 3
 
 [[package]]
 name = "eh3d-cam-debugger"
-version = "0.0.3"
+version = "0.0.4"
 dependencies = [
  "eh3d-parser-gcode",
 ]
