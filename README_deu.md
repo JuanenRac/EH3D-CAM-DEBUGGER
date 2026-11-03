@@ -79,6 +79,7 @@ Wie die Teile dieses Repositorys zusammenpassen: wer es nutzt, was es enthält u
 * **Tests mit beschädigten Eingaben:** Die Tests füttern auch leere Dateien, Datenmüll, riesige Zahlen und abgeschnittene Dateien; keiner darf in Panik geraten.
 * **Kein Raten:** Ein unsinniger Wert ist ein Fehler, der sagt welcher und warum, nie ein Ergebnis, das nur richtig aussieht.
 * **Kein unsafe-Code:** `#![forbid(unsafe_code)]` in Bibliothek und Programm.
+* **Ein fehlender Vorschub wird einmal gemeldet, und der Lasermodus wird gelesen:** jede Bewegung ohne Vorschub ergibt einen Befund (`--ignore feed-missing` schaltet ihn stumm), und `--laser` liest `M3` oder `M4` mit `S0` als ausgeschalteten Laser.
 
 ## 🔒 Sicherheit und Schutz
 
@@ -196,7 +197,7 @@ README und Texte gibt es auf Englisch, Spanisch, Französisch, Italienisch, Deut
 * [EH3D-ISOCAM](https://github.com/JuanenRac/EH3D-ISOCAM): das Isolationsfräsen von Kupfer
 * [EH3D-ROUTEPRO](https://github.com/JuanenRac/EH3D-ROUTEPRO): das Konturfräsprogramm
 * [EH3D-AUTOLEVEL](https://github.com/JuanenRac/EH3D-AUTOLEVEL): die Höhenkarte und die Korrektur von G-Code
-* [EH3D-MOTIONCNC](https://github.com/JuanenRac/EH3D-MOTIONCNC): das Maschinensteuerungsprogramm
+* [EH3D-PHOENIX-CNC](https://github.com/JuanenRac/EH3D-PHOENIX-CNC): das Maschinensteuerungsprogramm
 
 ## 📚 Dokumentation
 

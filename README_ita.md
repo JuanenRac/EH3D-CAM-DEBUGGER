@@ -79,6 +79,7 @@ Come si incastrano le parti di questo repository: chi lo usa, cosa contiene e da
 * **Test con input danneggiati:** i test forniscono anche file vuoti, spazzatura, numeri enormi e file tagliati, e nessuno può andare in panico.
 * **Nessuna ipotesi:** un valore privo di senso è un errore che dice quale e perché, mai un risultato che sembra solo giusto.
 * **Nessun codice unsafe:** `#![forbid(unsafe_code)]` nella libreria e nel programma.
+* **Un avanzamento mancante è segnalato una volta e si legge il modo laser:** ogni movimento senza avanzamento dà una sola segnalazione (`--ignore feed-missing` la mette a tacere) e `--laser` legge `M3` o `M4` con `S0` come laser spento.
 
 ## 🔒 Sicurezza e protezione
 
@@ -196,7 +197,7 @@ Il README e i testi esistono in inglese, spagnolo, francese, italiano, tedesco, 
 * [EH3D-ISOCAM](https://github.com/JuanenRac/EH3D-ISOCAM): la fresatura di isolamento del rame
 * [EH3D-ROUTEPRO](https://github.com/JuanenRac/EH3D-ROUTEPRO): il programma di fresatura del contorno
 * [EH3D-AUTOLEVEL](https://github.com/JuanenRac/EH3D-AUTOLEVEL): la mappa delle altezze e la correzione del G-code
-* [EH3D-MOTIONCNC](https://github.com/JuanenRac/EH3D-MOTIONCNC): il programma di controllo della macchina
+* [EH3D-PHOENIX-CNC](https://github.com/JuanenRac/EH3D-PHOENIX-CNC): il programma di controllo della macchina
 
 ## 📚 Documentazione
 

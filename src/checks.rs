@@ -1,6 +1,6 @@
 //! What would hurt: each finding has the line of the program, how serious it is and what it is.
 
-use eh3d_parser_gcode::{Motion, Segment, Severity, Trace};
+use eh3d_parser_gcode::{codes, Motion, Segment, Severity, Trace};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Level {
@@ -166,6 +166,17 @@ pub fn check(trace: &Trace, limits: &Limits) -> Vec<Finding> {
             }),
         }
     }
+    // the reader already says "no feed" for the lines it saw (or the user silenced that code): the check below only adds what the reader did not say
+    let feed_told: std::collections::HashSet<usize> = trace
+        .diagnostics
+        .iter()
+        .filter(|d| d.code == codes::FEED_MISSING)
+        .map(|d| d.line)
+        .collect();
+    let feed_ignored = limits
+        .ignore_codes
+        .iter()
+        .any(|c| c.as_str() == codes::FEED_MISSING);
     for s in &trace.segments {
         let rapid = matches!(s.motion, Motion::Rapid);
         let lo = s.from.z.min(s.to.z);
@@ -182,7 +193,7 @@ pub fn check(trace: &Trace, limits: &Limits) -> Vec<Finding> {
                 message: "it cuts with the spindle off".into(),
             });
         }
-        if !rapid && s.feed <= 0.0 {
+        if !rapid && s.feed <= 0.0 && !feed_ignored && !feed_told.contains(&s.line) {
             out.push(Finding {
                 line: s.line,
                 level: Level::Warning,

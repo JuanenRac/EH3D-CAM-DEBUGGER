@@ -794,3 +794,26 @@ fn the_waits_of_g4_are_counted_apart_from_the_moves() {
     assert!((dwell_s(&marlin) - 2.5).abs() < 1e-9);
     assert_eq!(dwell_s(&parse("G1 X1 F100\n", Dialect::Grbl)), 0.0);
 }
+
+#[test]
+fn a_missing_feed_is_told_once_per_move_and_can_be_silenced_by_its_code() {
+    let program = "G21 G90\nM3 S10000\nG1 Z-1\nG1 X5\nM2\n";
+    let told = check(&trace(program), &Limits::default());
+    let lines: Vec<usize> = told
+        .iter()
+        .filter(|f| f.message.contains("feed"))
+        .map(|f| f.line)
+        .collect();
+    assert_eq!(lines, vec![3, 4], "{told:?}");
+    let silenced = check(
+        &trace(program),
+        &Limits {
+            ignore_codes: vec!["feed-missing".to_string()],
+            ..Limits::default()
+        },
+    );
+    assert!(
+        silenced.iter().all(|f| !f.message.contains("feed")),
+        "{silenced:?}"
+    );
+}

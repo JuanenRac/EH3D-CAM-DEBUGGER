@@ -5,8 +5,8 @@
 use eh3d_cam_debugger::checks::{check, has_alerts, strict, Clamp, Level, Limits};
 use eh3d_cam_debugger::timeline::{dwell_s, format_time, timeline, Machine};
 use eh3d_parser_gcode::{
-    codes, interpret, parse_bytes_with, read_file_limited, Dialect, InputError, InputLimits,
-    ReadError,
+    codes, interpret_with, parse_bytes_with, read_file_limited, Dialect, InputError, InputLimits,
+    InterpretOptions, ReadError,
 };
 use std::env;
 use std::process::ExitCode;
@@ -17,7 +17,7 @@ const HELP: &str = "eh3d-camdebug: checks a G-code program before it reaches a m
   eh3d-camdebug steps FILE.nc [options]     every move with its line, length and time
 
 Options: --accel MM_S2 (500)  --rapid MM_MIN (3000)  --feed MM_MIN (300, used when a cut has no feed)  --dialect grbl|marlin|planetcnc
-         --table WIDTH,DEPTH  --surface Z (0)  --min-z Z  --max-feed MM_MIN  --clamp X0,Y0,X1,Y1,HEIGHT (as many as needed)
+         --table WIDTH,DEPTH  --surface Z (0)  --min-z Z  --max-feed MM_MIN  --laser (M3 or M4 with S0 is not burning)  --clamp X0,Y0,X1,Y1,HEIGHT (as many as needed)
          --strict (every warning is an alert too: exit code 1 for a cut with the spindle off, for one)
          --ignore CODE[,CODE] (leave out the notices of the reader with those codes, for example line-too-long)  --max-bytes N (the largest file, 268435456 by default)
 The time is an upper bound: every move is counted from rest to rest.";
@@ -39,6 +39,7 @@ struct Options {
     limits: Limits,
     dialect: Dialect,
     strict: bool,
+    laser: bool,
     max_bytes: usize,
 }
 
@@ -57,11 +58,17 @@ fn ignored_codes(value: &str) -> Result<Vec<String>, String> {
 fn parse_options(args: &[String]) -> Result<Options, String> {
     let (mut m, mut l, mut d) = (Machine::default(), Limits::default(), Dialect::Grbl);
     let mut strict = false;
+    let mut laser = false;
     let mut max_bytes = InputLimits::default().max_bytes;
     let mut i = 0;
     while i < args.len() {
         if args[i] == "--strict" {
             strict = true;
+            i += 1;
+            continue;
+        }
+        if args[i] == "--laser" {
+            laser = true;
             i += 1;
             continue;
         }
@@ -115,6 +122,7 @@ fn parse_options(args: &[String]) -> Result<Options, String> {
         limits: l,
         dialect: d,
         strict,
+        laser,
         max_bytes,
     })
 }
@@ -177,6 +185,7 @@ fn run(mut args: Vec<String>) -> Result<bool, String> {
         limits,
         dialect,
         strict: strict_mode,
+        laser,
         max_bytes,
     } = parse_options(&args)?;
     let bytes = read_file_limited(std::path::Path::new(&file), &InputLimits { max_bytes })
@@ -188,7 +197,7 @@ fn run(mut args: Vec<String>) -> Result<bool, String> {
         })?;
     let program = parse_bytes_with(&bytes, dialect, &InputLimits { max_bytes })
         .map_err(|e| format!("{file}: {e}"))?;
-    let trace = interpret(&program);
+    let trace = interpret_with(&program, &InterpretOptions { s0_is_off: laser });
     let tl = timeline(&trace, &machine)?;
     match cmd.as_str() {
         "check" => {
