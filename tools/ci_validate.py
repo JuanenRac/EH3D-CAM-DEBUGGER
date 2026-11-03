@@ -4,7 +4,7 @@
 # Copyright (C) 2026 JuanenRac (Electro Hobby 3D) <electrohobby3d@gmail.com>
 # GPL-3.0-or-later - see LICENSE
 # =============================================================================
-# canonical: EH3D-DOCS tools 1
+# canonical: EH3D-DOCS tools 2
 """The repository checks that CI runs besides cargo: manifest, versions, licence, changelog, the eight README files
 and the words that must never appear in public files. Prints CI_VALIDATION=PASS or FAIL with the reasons."""
 from __future__ import annotations
@@ -15,7 +15,7 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-TOOLS_VERSION = "1"  # raise it with every change of this file; the header of every copy says which one it holds
+TOOLS_VERSION = "2"  # raise it with every change of this file; the header of every copy says which one it holds
 DEFAULT_SKIP_DIRS = {"target", ".git"}  # folders the scan for forbidden words never enters; a repository adds its own in tools/ci_config.json
 REQUIRED = ["schema_version", "ecosystem", "name", "version", "role", "stack", "technologies", "deployment_target",
             "maturity", "family", "parent", "build", "notes", "native_version"]
@@ -180,6 +180,30 @@ def _status_lights_ci(root: Path) -> list[str]:
 
 
 
+def _banner_ci(root: Path) -> list[str]:
+    """The text of the banner agrees with the manifest (role, name, technologies); see tools/banner_check.py."""
+    try:
+        sys.path.insert(0, str(Path(__file__).resolve().parent))
+        import banner_check
+    except ImportError:
+        return []
+    return banner_check.run_in_ci(root)
+
+
+def scan_files() -> list[Path]:
+    """The files the scan for forbidden words reads: the ones git tracks (what CI sees), so .venv, node_modules or dist never give a false alarm.
+
+    Outside a git checkout (a downloaded archive) it falls back to every file under the folder."""
+    import subprocess
+
+    try:
+        out = subprocess.run(["git", "ls-files", "-z"], cwd=ROOT, capture_output=True, check=True).stdout
+    except (OSError, subprocess.CalledProcessError):
+        return sorted(p for p in ROOT.rglob("*") if p.is_file())
+    names = [raw.decode("utf-8", "replace") for raw in out.split(b"\0") if raw]
+    return sorted(p for p in (ROOT / name for name in names) if p.is_file())
+
+
 def _depends_on_problems(root: Path, manifest: dict) -> list[str]:
     """The sibling repositories that a Cargo.toml reaches with a path are the ones the manifest names in depends_on (schema 1.1)."""
     found: set[str] = set()
@@ -316,8 +340,8 @@ def main() -> int:
         for other in LANGUAGES:
             if other != name and other not in text:
                 problems.append(f"{name} does not link to {other} in its language bar")
-    for path in ROOT.rglob("*"):
-        if not path.is_file() or skipped & set(path.relative_to(ROOT).parts) or path.suffix not in TEXT_SUFFIXES:
+    for path in scan_files():
+        if skipped & set(path.relative_to(ROOT).parts) or path.suffix not in TEXT_SUFFIXES:
             continue
         if path.name == "ci_validate.py":
             continue
@@ -327,6 +351,7 @@ def main() -> int:
     problems.extend(tree_problems())
     problems.extend(_universal_readme_ci(ROOT))
     problems.extend(_status_lights_ci(ROOT))
+    problems.extend(_banner_ci(ROOT))
     problems.extend(_depends_on_problems(ROOT, manifest))
     if problems:
         for problem in problems:
