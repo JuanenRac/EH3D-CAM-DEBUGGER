@@ -1,7 +1,7 @@
 //! How long a program takes. Every segment is worked out as a move from rest to rest with a constant acceleration (a trapezoid of speed): it is an upper bound,
-//! because a real controller joins the segments without stopping, so the true time is a little shorter.
+//! because a real controller joins the segments without stopping, so the true time is a little shorter. The waits of `G4` are not moves and are added apart (`dwell_s`).
 
-use eh3d_parser_gcode::{Motion, Segment, Trace};
+use eh3d_parser_gcode::{Dialect, Motion, Program, Segment, Trace};
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Machine {
@@ -129,6 +129,24 @@ pub fn timeline(trace: &Trace, machine: &Machine) -> Result<Timeline, String> {
         }
     }
     Ok(t)
+}
+
+/// The seconds the program waits with `G4` (a dwell), which the moves do not count: `P` in seconds for GRBL and PlanetCNC; in Marlin `P` is milliseconds and `S` seconds.
+pub fn dwell_s(program: &Program) -> f64 {
+    let mut total = 0.0;
+    for b in &program.blocks {
+        if b.words.iter().any(|w| w.letter == 'G' && w.value == 4.0) {
+            let p = b.get('P').unwrap_or(0.0);
+            let s = match program.dialect {
+                Dialect::Marlin => p / 1000.0 + b.get('S').unwrap_or(0.0),
+                _ => p,
+            };
+            if s.is_finite() && s > 0.0 {
+                total += s;
+            }
+        }
+    }
+    total
 }
 
 /// `1 h 02 min 05 s`, `3 min 20 s` or `12.5 s`.

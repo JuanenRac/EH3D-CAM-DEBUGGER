@@ -780,3 +780,14 @@ fn a_thin_clamp_is_found_on_a_diagonal_move_and_not_when_the_head_is_above_it() 
     // a move that runs next to the clamp without touching it
     assert!(findings("G21 G90\nM3\nG0 X0 Y0 Z3\nG0 X100 Y2\n", &clamp(6.0)).is_empty());
 }
+
+#[test]
+fn the_waits_of_g4_are_counted_apart_from_the_moves() {
+    use eh3d_cam_debugger::timeline::dwell_s;
+    let grbl = parse("G21\nG4 P0.5\nG1 X10 F600\nG4 P2\n", Dialect::Grbl);
+    assert!((dwell_s(&grbl) - 2.5).abs() < 1e-9);
+    // in Marlin P is in milliseconds and S in seconds
+    let marlin = parse("G4 P500\nG4 S2\n", Dialect::Marlin);
+    assert!((dwell_s(&marlin) - 2.5).abs() < 1e-9);
+    assert_eq!(dwell_s(&parse("G1 X1 F100\n", Dialect::Grbl)), 0.0);
+}

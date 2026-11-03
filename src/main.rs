@@ -3,7 +3,7 @@
 #![forbid(unsafe_code)]
 
 use eh3d_cam_debugger::checks::{check, has_alerts, strict, Clamp, Level, Limits};
-use eh3d_cam_debugger::timeline::{format_time, timeline, Machine};
+use eh3d_cam_debugger::timeline::{dwell_s, format_time, timeline, Machine};
 use eh3d_parser_gcode::{codes, interpret, parse_bytes_with, Dialect, InputLimits};
 use std::env;
 use std::fs;
@@ -153,6 +153,15 @@ fn run(mut args: Vec<String>) -> Result<bool, String> {
                 format_time(tl.cutting_s),
                 format_time(tl.rapid_s)
             );
+            // the waits (G4) are not moves: they are added apart so that the time is not understated
+            let waits = dwell_s(&program);
+            if waits > 0.0 {
+                println!(
+                    "waits (G4): {}  (with the waits: {})",
+                    format_time(waits),
+                    format_time(tl.total_s + waits)
+                );
+            }
             let mut findings = check(&trace, &limits);
             if strict_mode {
                 strict(&mut findings);
