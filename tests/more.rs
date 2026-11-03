@@ -57,10 +57,34 @@ fn a_machine_with_a_value_that_is_not_more_than_zero_is_refused_naming_it() {
     let good = Machine::default();
     assert!(good.validate().is_ok());
     for (machine, name) in [
-        (Machine { accel_mm_s2: 0.0, ..good }, "accel_mm_s2"),
-        (Machine { rapid_mm_min: -5.0, ..good }, "rapid_mm_min"),
-        (Machine { default_feed_mm_min: f64::NAN, ..good }, "default_feed_mm_min"),
-        (Machine { accel_mm_s2: f64::INFINITY, ..good }, "accel_mm_s2"),
+        (
+            Machine {
+                accel_mm_s2: 0.0,
+                ..good
+            },
+            "accel_mm_s2",
+        ),
+        (
+            Machine {
+                rapid_mm_min: -5.0,
+                ..good
+            },
+            "rapid_mm_min",
+        ),
+        (
+            Machine {
+                default_feed_mm_min: f64::NAN,
+                ..good
+            },
+            "default_feed_mm_min",
+        ),
+        (
+            Machine {
+                accel_mm_s2: f64::INFINITY,
+                ..good
+            },
+            "accel_mm_s2",
+        ),
     ] {
         let e = machine.validate().unwrap_err();
         assert!(e.contains(name), "{e}");
@@ -94,13 +118,22 @@ fn the_steps_begin_where_the_one_before_ended_and_the_total_is_cutting_plus_rapi
 #[test]
 fn a_cutting_move_without_a_feed_goes_at_the_default_feed() {
     let t = trace("G21 G90\nG0 X0 Y0\nG1 X60 Y0\nM2\n");
-    let slow = Machine { default_feed_mm_min: 60.0, ..Machine::default() };
-    let fast = Machine { default_feed_mm_min: 600.0, ..Machine::default() };
+    let slow = Machine {
+        default_feed_mm_min: 60.0,
+        ..Machine::default()
+    };
+    let fast = Machine {
+        default_feed_mm_min: 600.0,
+        ..Machine::default()
+    };
     let (a, b) = (timeline(&t, &slow).unwrap(), timeline(&t, &fast).unwrap());
     assert!(a.cutting_s > b.cutting_s);
     // the same program with a feed of its own does not care for the default
     let t2 = trace("G21 G90\nG0 X0 Y0\nG1 X60 Y0 F600\nM2\n");
-    assert!((timeline(&t2, &slow).unwrap().cutting_s - timeline(&t2, &fast).unwrap().cutting_s).abs() < 1e-9);
+    assert!(
+        (timeline(&t2, &slow).unwrap().cutting_s - timeline(&t2, &fast).unwrap().cutting_s).abs()
+            < 1e-9
+    );
 }
 
 #[test]
@@ -109,15 +142,31 @@ fn a_straight_move_has_the_length_of_the_line_and_a_full_circle_the_length_of_th
     let seg = t.segments.last().unwrap();
     assert!((length(seg) - 5.0).abs() < 1e-9);
     let t = trace("G21 G90\nG0 X10 Y0\nG2 X10 Y0 I-10 J0 F100\nM2\n");
-    let circle = t.segments.iter().find(|s| !matches!(s.motion, eh3d_parser_gcode::Motion::Rapid)).unwrap();
-    assert!((length(circle) - 2.0 * std::f64::consts::PI * 10.0).abs() < 1e-6, "{}", length(circle));
+    let circle = t
+        .segments
+        .iter()
+        .find(|s| !matches!(s.motion, eh3d_parser_gcode::Motion::Rapid))
+        .unwrap();
+    assert!(
+        (length(circle) - 2.0 * std::f64::consts::PI * 10.0).abs() < 1e-6,
+        "{}",
+        length(circle)
+    );
 }
 
 #[test]
 fn a_helix_is_longer_than_the_flat_arc_it_climbs() {
     let flat = trace("G21 G90\nG0 X10 Y0 Z0\nG3 X-10 Y0 I-10 J0 F100\nM2\n");
     let helix = trace("G21 G90\nG0 X10 Y0 Z0\nG3 X-10 Y0 Z-5 I-10 J0 F100\nM2\n");
-    let pick = |t: &Trace| length(t.segments.iter().rev().find(|s| !matches!(s.motion, eh3d_parser_gcode::Motion::Rapid)).unwrap());
+    let pick = |t: &Trace| {
+        length(
+            t.segments
+                .iter()
+                .rev()
+                .find(|s| !matches!(s.motion, eh3d_parser_gcode::Motion::Rapid))
+                .unwrap(),
+        )
+    };
     assert!((pick(&flat) - std::f64::consts::PI * 10.0).abs() < 1e-6);
     assert!(pick(&helix) > pick(&flat));
 }
@@ -133,8 +182,14 @@ fn finding(level: Level) -> Finding {
 #[test]
 fn only_alerts_count_as_alerts_and_strict_turns_every_warning_into_one() {
     assert!(!has_alerts(&[]));
-    assert!(!has_alerts(&[finding(Level::Warning), finding(Level::Warning)]));
-    assert!(has_alerts(&[finding(Level::Warning), finding(Level::Alert)]));
+    assert!(!has_alerts(&[
+        finding(Level::Warning),
+        finding(Level::Warning)
+    ]));
+    assert!(has_alerts(&[
+        finding(Level::Warning),
+        finding(Level::Alert)
+    ]));
     let mut all = [finding(Level::Warning), finding(Level::Warning)];
     strict(&mut all);
     assert!(all.iter().all(|f| f.level == Level::Alert));
@@ -144,9 +199,14 @@ fn only_alerts_count_as_alerts_and_strict_turns_every_warning_into_one() {
 }
 
 #[test]
-fn a_clean_program_inside_the_limits_has_no_findings_and_the_findings_come_in_the_order_of_the_program() {
+fn a_clean_program_inside_the_limits_has_no_findings_and_the_findings_come_in_the_order_of_the_program(
+) {
     let clean = trace("G21 G90\nG0 Z5\nG0 X10 Y10\nG1 Z-0.1 F100\nG1 X20 Y10\nG0 Z5\nM2\n");
-    let limits = Limits { table: Some((100.0, 100.0)), min_z: Some(-2.0), ..Limits::default() };
+    let limits = Limits {
+        table: Some((100.0, 100.0)),
+        min_z: Some(-2.0),
+        ..Limits::default()
+    };
     assert!(!has_alerts(&check(&clean, &limits)));
     let bad = trace("G21 G90\nG0 X10 Y10\nG1 X500 Y10 F100\nG1 X20 Y900\nM2\n");
     let f = check(&bad, &limits);
