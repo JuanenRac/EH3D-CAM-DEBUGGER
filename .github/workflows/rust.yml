@@ -35,10 +35,11 @@ jobs:
       matrix:
         os: [ubuntu-latest, windows-latest]
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
         with:
+          persist-credentials: false
           path: EH3D-CAM-DEBUGGER
-      - uses: actions/setup-python@v6
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
         with:
           python-version: "3.12"
       - name: Check out the sibling repositories named in depends_on of the manifest
@@ -69,7 +70,7 @@ jobs:
         shell: bash
         working-directory: EH3D-CAM-DEBUGGER
         run: rustup toolchain install "$(sed -n 's/^channel = "\(.*\)"/\1/p' rust-toolchain.toml)" --profile minimal --component rustfmt,clippy
-      - uses: Swatinem/rust-cache@v2.7.8
+      - uses: Swatinem/rust-cache@9d47c6ad4b02e050fd481d890b2ea34778fd09d6 # v2.7.8
         with:
           workspaces: EH3D-CAM-DEBUGGER
       - name: Format
@@ -91,10 +92,11 @@ jobs:
     env:
       SIBLING_REFS: ""
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
         with:
+          persist-credentials: false
           path: EH3D-CAM-DEBUGGER
-      - uses: actions/setup-python@v6
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
         with:
           python-version: "3.12"
       - name: Check out the sibling repositories named in depends_on of the manifest
@@ -125,7 +127,7 @@ jobs:
         shell: bash
         working-directory: EH3D-CAM-DEBUGGER
         run: rustup toolchain install "$(sed -n 's/^channel = "\(.*\)"/\1/p' rust-toolchain.toml)" --profile minimal --component rustfmt,clippy
-      - uses: Swatinem/rust-cache@v2.7.8
+      - uses: Swatinem/rust-cache@9d47c6ad4b02e050fd481d890b2ea34778fd09d6 # v2.7.8
         with:
           workspaces: EH3D-CAM-DEBUGGER
       - name: Build against the sibling main branches
