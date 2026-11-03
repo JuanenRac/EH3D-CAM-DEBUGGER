@@ -29,18 +29,19 @@ import re
 import sys
 from pathlib import Path
 
-TEXT = re.compile(r"<text\b([^>]*)>([^<]*)</text>")
+TEXT = re.compile(r"<text\b([^>]*)>(.*?)</text>", re.S)
+TAG = re.compile(r"<[^>]+>")  # a <tspan> inside a <text> is part of its content
 ATTR = re.compile(r'(\w[\w-]*)="([^"]*)"')
 
 
 def texts(svg: str) -> list[tuple[dict[str, str], str]]:
     """Every <text> of the picture as (attributes, content), in document order."""
-    return [(dict(ATTR.findall(attrs)), html.unescape(body).strip()) for attrs, body in TEXT.findall(svg)]
+    return [(dict(ATTR.findall(attrs)), html.unescape(TAG.sub("", body)).strip()) for attrs, body in TEXT.findall(svg)]
 
 
 def banner_files(root: Path) -> list[Path]:
     folder = root / "images"
-    return sorted(folder.glob("*BANNER*.svg")) if folder.is_dir() else []
+    return sorted(path for path in folder.iterdir() if path.suffix.lower() == ".svg" and "banner" in path.name.lower()) if folder.is_dir() else []
 
 
 def problems_of(svg: str, manifest: dict, label: str) -> list[str]:
@@ -74,7 +75,7 @@ def problems_of(svg: str, manifest: dict, label: str) -> list[str]:
 
 
 def problems(root: Path) -> list[str]:
-    manifest_path = root / "eh3d.project.json"
+    manifest_path = next((root / name for name in ("eh3d.project.json", "electro-hobby-3d.project.json") if (root / name).is_file()), root / "eh3d.project.json")
     banners = banner_files(root)
     if not banners or not manifest_path.is_file():
         return []

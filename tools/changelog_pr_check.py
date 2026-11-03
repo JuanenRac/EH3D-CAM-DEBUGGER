@@ -4,15 +4,15 @@
 # Copyright (C) 2026 JuanenRac (Electro Hobby 3D) <electrohobby3d@gmail.com>
 # GPL-3.0-or-later - see LICENSE
 # =============================================================================
-# canonical: EH3D-DOCS tools 1
+# canonical: EH3D-DOCS tools 2
 """Checks, for a pull request, that the CHANGELOG gets a line under "## [Unreleased]" when the code changes.
 
     python tools/changelog_pr_check.py --base origin/main      # compares HEAD with the merge base of origin/main
     python tools/changelog_pr_check.py --base origin/main --warn-only
 
 The change counts as code when it touches a file under src/, crates/, main/, app/ or tools/ (the folders can be listed in tools/ci_config.json under "changelog_paths").
-Then the number of entries under "## [Unreleased]" must be higher than it was on the base. A release that moves the entries to a version heading is not a missing line:
-a change that adds a version heading to CHANGELOG.md passes.
+Then "## [Unreleased]" must hold an entry that the base does not have (a new one or an edited one). A release that moves the entries to a version heading is not a missing line:
+a change that adds a version heading to CHANGELOG.md passes (an empty "[Unreleased]" heading does not count).
 
 Exit codes: 0 pass, 1 a line is missing, 64 wrong use. Standard library only; needs the history of the base (checkout with fetch-depth 0)."""
 from __future__ import annotations
@@ -45,6 +45,17 @@ def unreleased_entries(text: str) -> int:
     return 0
 
 
+def unreleased_lines(text: str) -> set[str]:
+    """The text of the bullets under the [Unreleased] heading: a line that is new or edited is not in the set of the base."""
+    text = text.replace("\r\n", "\n")
+    heads = list(HEADING.finditer(text))
+    for i, head in enumerate(heads):
+        if head.group("version").lower() == "unreleased":
+            end = heads[i + 1].start() if i + 1 < len(heads) else len(text)
+            return {line.strip() for line in text[head.end():end].splitlines() if ENTRY.match(line)}
+    return set()
+
+
 def versions(text: str) -> set[str]:
     return {m.group("version") for m in HEADING.finditer(text.replace("\r\n", "\n"))}
 
@@ -74,9 +85,9 @@ def problems(root: Path, base: str) -> list[str]:
         before = ""
     path = root / "CHANGELOG.md"
     after = path.read_text(encoding="utf-8") if path.is_file() else ""
-    if versions(after) - versions(before):
-        return []
-    if unreleased_entries(after) > unreleased_entries(before):
+    if {name for name in versions(after) - versions(before) if name.lower() != "unreleased"}:
+        return []  # a release heading (an empty [Unreleased] added, or a heading renamed to it, is not one)
+    if unreleased_lines(after) - unreleased_lines(before):
         return []
     return [f"{len(code)} file(s) of {', '.join(watched)} changed (for example {code[0]}) but CHANGELOG.md has no new line under \"## [Unreleased]\""]
 

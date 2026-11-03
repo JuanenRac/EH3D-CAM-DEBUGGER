@@ -3,6 +3,7 @@
 All notable changes to this project are documented here.
 
 ## [Unreleased]
+- **Shared checks updated:** the validator also compares the badge and the Version row of the README with the manifest, fails when one of its checks cannot run, and the CHANGELOG step of the workflow reads the base branch from the environment.
 - **Unknown commands first:** an unknown command is refused before the file is read.
 - **Limited reading:** the program is refused by its size before it is read into memory, with the message in the eight languages.
 - **Waits are counted:** the dwells of `G4` are added apart from the moves in the time report, so a program with a wait at every hole no longer understates its time.
