@@ -18,7 +18,7 @@
 
 ---
 
-**Honesty check - what actually runs today:** a Rust library and a command line program (`eh3d-camdebug`) with 48 tests that run on a computer: works out the time of a G-code program and finds rapid moves into the material, moves outside the table, cuts with the spindle off and heads over clamps. It has no window yet, it has not been tried on a machine and it has not been checked against a collection of real files.
+**Honesty check - what actually runs today:** a Rust library and a command line program (`eh3d-camdebug`) with 61 tests that run on a computer: works out the time of a G-code program and finds rapid moves into the material, moves outside the table, cuts with the spindle off and heads over clamps. It has no window yet, it has not been tried on a machine and it has not been checked against a collection of real files.
 
 ---
 
@@ -31,7 +31,7 @@
 |---|---|
 | Version | `0.0.4` |
 | Maturity | Scaffolding |
-| Tests | 48 |
+| Tests | 61 |
 | Stack | Rust |
 | On real hardware | Not tried: nothing here has run on a machine |
 
@@ -47,7 +47,7 @@ Each line is one part of this repository and the light says how far it is today.
 |---|---|---|
 | Core | 🟡 | works out the time of a G-code program and finds rapid moves into the material, moves outside the table, cuts with the spindle off and heads over clamps; tested on a computer with normal and damaged input, not with a collection of real files. |
 | Command line | 🟡 | `eh3d-camdebug` runs the same functions as the library and prints the result; every error comes back as a message and a non-zero exit code. |
-| Tests | 🟡 | 48 tests pass (`cargo test`), with normal cases, edge cases and damaged input. |
+| Tests | 🟡 | 61 tests pass (`cargo test`), with normal cases, edge cases and damaged input. |
 | Security | 🟡 | Plain safe Rust (`forbid(unsafe_code)`): nothing panics on the files it is given and a bad value is an error with its reason; no independent review. |
 | Window | 🔴 | Planned: the egui window common to the suite; today there is only the command line. |
 | Real hardware | 🔴 | Not tried: nothing here has been run on a machine. |
@@ -55,7 +55,7 @@ Each line is one part of this repository and the light says how far it is today.
 
 ## 🎯 Overview
 
-* **The time** (`src/timeline.rs`): every move is a trapezoid of speed from rest to rest with the acceleration and the rapid speed of the machine; the arcs are measured along the arc, a cut with no feed uses a default one, and the total is split in cutting and rapid. It is an upper bound: a real controller does not stop between moves.
+* **The time** (`src/timeline.rs`): every move is a trapezoid of speed from rest to rest with the acceleration and the rapid speed of the machine; the arcs are measured along the arc, a cut with no feed uses a default one, and the total is split in cutting and rapid. It is an upper bound for the moves: a real controller does not stop between moves. The waits of `G4` (`P` in seconds, or in milliseconds in Marlin with `S` in seconds) are not moves and are added apart.
 * **The alerts** (`src/checks.rs`): a rapid move (G0) into the material or sideways below the surface, a move outside the table, a Z below the lowest one of the machine, and a head that passes over a clamp below its height are alerts (exit code 1); a cut with the spindle off, a cut with no feed and a feed above a limit are warnings. A straight move is tested exactly against each clamp, so a clamp thinner than any step is still found.
 * **What the reader could not understand** (cutter compensation, canned cycles, a damaged line) comes up as an alert with its line, so a program that was misread is never reported as clean.
 * **Arcs, `--strict` and the codes that move the origin:** the table limits and the clamps are tested along the arc of a G2 or G3, not along its chord; `--strict` makes every warning an alert (exit code 1), for a flow that uses the exit code as the barrier before the machine; a program with G92, G53, G28, G30 or G10 is reported instead of passing as clean.
@@ -138,7 +138,7 @@ cargo run --release -- check examples/sample.nc --table 100,80 --clamp 20,-5,30,
 
 ## 🧪 Testing
 
-The suite has 48 tests (`cargo test`, run on Windows and Linux in the CI). They check the normal cases, the edge cases and damaged input: empty files, garbage and cut files never panic. The CI also runs `cargo fmt --check`, `cargo clippy` with warnings as errors and `python -I tools/ci_validate.py`.
+The suite has 61 tests (`cargo test`, run on Windows and Linux in the CI). They check the normal cases, the edge cases and damaged input: empty files, garbage and cut files never panic. The CI also runs `cargo fmt --check`, `cargo clippy` with warnings as errors and `python -I tools/ci_validate.py`.
 
 ## 🏗️ Build & Release
 

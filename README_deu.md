@@ -18,7 +18,7 @@
 
 ---
 
-**Ehrlichkeitscheck - was heute wirklich läuft:** eine Rust-Bibliothek und ein Kommandozeilenprogramm (`eh3d-camdebug`) mit 48 Tests, die auf einem Computer laufen: berechnet die Zeit eines G-Code-Programms und findet Eilgänge ins Material, Bewegungen außerhalb des Tisches, Schnitte bei stehender Spindel und Köpfe über Spannern. Es hat noch kein Fenster, wurde an keiner Maschine ausprobiert und nicht an einer Sammlung echter Dateien geprüft.
+**Ehrlichkeitscheck - was heute wirklich läuft:** eine Rust-Bibliothek und ein Kommandozeilenprogramm (`eh3d-camdebug`) mit 61 Tests, die auf einem Computer laufen: berechnet die Zeit eines G-Code-Programms und findet Eilgänge ins Material, Bewegungen außerhalb des Tisches, Schnitte bei stehender Spindel und Köpfe über Spannern. Es hat noch kein Fenster, wurde an keiner Maschine ausprobiert und nicht an einer Sammlung echter Dateien geprüft.
 
 ---
 
@@ -31,7 +31,7 @@
 |---|---|
 | Version | `0.0.4` |
 | Reifegrad | Gerüst |
-| Tests | 48 |
+| Tests | 61 |
 | Technologie-Stack | Rust |
 | Auf echter Hardware | Nicht erprobt: nichts davon lief an einer Maschine |
 
@@ -47,7 +47,7 @@ Jede Zeile ist ein Teil dieses Repositorys, und die Ampel sagt, wie weit er heut
 |---|---|---|
 | Kern | 🟡 | berechnet die Zeit eines G-Code-Programms und findet Eilgänge ins Material, Bewegungen außerhalb des Tisches, Schnitte bei stehender Spindel und Köpfe über Spannern; am Computer mit normalen und beschädigten Eingaben getestet, nicht mit einer Sammlung echter Dateien. |
 | Kommandozeile | 🟡 | `eh3d-camdebug` führt dieselben Funktionen wie die Bibliothek aus und gibt das Ergebnis aus; jeder Fehler kommt als Meldung mit einem Exit-Code ungleich null zurück. |
-| Tests | 🟡 | 48 Tests bestehen (`cargo test`), mit Normalfällen, Grenzfällen und beschädigten Eingaben. |
+| Tests | 🟡 | 61 Tests bestehen (`cargo test`), mit Normalfällen, Grenzfällen und beschädigten Eingaben. |
 | Sicherheit | 🟡 | Reines sicheres Rust (`forbid(unsafe_code)`): nichts gerät bei den übergebenen Dateien in Panik und ein schlechter Wert ist ein Fehler mit Begründung; keine unabhängige Prüfung. |
 | Fenster | 🔴 | Geplant: das egui-Fenster, das die Suite gemeinsam nutzt; heute gibt es nur die Kommandozeile. |
 | Echte Hardware | 🔴 | Nicht erprobt: nichts davon wurde an einer Maschine ausgeführt. |
@@ -55,7 +55,7 @@ Jede Zeile ist ein Teil dieses Repositorys, und die Ampel sagt, wie weit er heut
 
 ## 🎯 Überblick
 
-* **Die Zeit** (`src/timeline.rs`): Jede Bewegung ist ein Geschwindigkeitstrapez von Ruhe zu Ruhe mit Beschleunigung und Eilganggeschwindigkeit der Maschine; Bögen werden entlang des Bogens gemessen, ein Schnitt ohne Vorschub nutzt einen Standardwert, und die Summe wird in Schnitt und Eilgang geteilt. Das ist eine Obergrenze: eine echte Steuerung hält zwischen Bewegungen nicht an.
+* **Die Zeit** (`src/timeline.rs`): Jede Bewegung ist ein Geschwindigkeitstrapez von Ruhe zu Ruhe mit Beschleunigung und Eilganggeschwindigkeit der Maschine; Bögen werden entlang des Bogens gemessen, ein Schnitt ohne Vorschub nutzt einen Standardwert, und die Summe wird in Schnitt und Eilgang geteilt. Das ist eine Obergrenze: eine echte Steuerung hält zwischen Bewegungen nicht an. Die Wartezeiten von `G4` (`P` in Sekunden, in Marlin in Millisekunden mit `S` in Sekunden) sind keine Bewegungen und werden getrennt addiert.
 * **Die Alarme** (`src/checks.rs`): ein Eilgang ins Material oder seitlich unter der Oberfläche, eine Bewegung außerhalb des Tisches, ein Z unter dem tiefsten der Maschine und ein Kopf, der unter ihrer Höhe über einen Spanner fährt, sind Alarme (Exit-Code 1); ein Schnitt bei stehender Spindel, ein Schnitt ohne Vorschub und ein Vorschub über einem Limit sind Warnungen. Eine gerade Bewegung wird exakt gegen jede Spannpratze geprüft, sodass auch eine Pratze gefunden wird, die dünner ist als jede Schrittweite.
 * **Was der Leser nicht verstand** (Radiuskorrektur, Bohrzyklen, eine beschädigte Zeile), erscheint als Alarm mit seiner Zeile, sodass ein falsch gelesenes Programm nie als sauber gilt.
 * **Bögen, `--strict` und die Codes, die den Nullpunkt verschieben:** Tischgrenzen und Spannpratzen werden entlang des Bogens eines G2 oder G3 geprüft, nicht entlang seiner Sehne; `--strict` macht jede Warnung zum Alarm (Exit-Code 1), für einen Ablauf, der den Exit-Code als Schranke vor der Maschine nutzt; ein Programm mit G92, G53, G28, G30 oder G10 wird gemeldet, statt als sauber durchzugehen.
@@ -138,7 +138,7 @@ cargo run --release -- check examples/sample.nc --table 100,80 --clamp 20,-5,30,
 
 ## 🧪 Tests
 
-Die Suite hat 48 Tests (`cargo test`, in der CI unter Windows und Linux). Sie prüfen Normalfälle, Grenzfälle und beschädigte Eingaben: leere Dateien, Datenmüll und abgeschnittene Dateien lösen nie eine Panik aus. Die CI führt außerdem `cargo fmt --check`, `cargo clippy` mit Warnungen als Fehlern und `python -I tools/ci_validate.py` aus.
+Die Suite hat 61 Tests (`cargo test`, in der CI unter Windows und Linux). Sie prüfen Normalfälle, Grenzfälle und beschädigte Eingaben: leere Dateien, Datenmüll und abgeschnittene Dateien lösen nie eine Panik aus. Die CI führt außerdem `cargo fmt --check`, `cargo clippy` mit Warnungen als Fehlern und `python -I tools/ci_validate.py` aus.
 
 ## 🏗️ Build und Veröffentlichung
 

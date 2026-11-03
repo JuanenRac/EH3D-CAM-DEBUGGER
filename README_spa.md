@@ -18,7 +18,7 @@
 
 ---
 
-**Comprobación de honestidad - lo que funciona hoy:** una biblioteca Rust y un programa de línea de comandos (`eh3d-camdebug`) con 48 pruebas que se ejecutan en un ordenador: calcula el tiempo de un programa G-code y encuentra movimientos rápidos al material, movimientos fuera de la mesa, cortes con el husillo parado y cabezales sobre pinzas. Todavía no tiene ventana, no se ha probado en una máquina y no se ha comprobado con una colección de ficheros reales.
+**Comprobación de honestidad - lo que funciona hoy:** una biblioteca Rust y un programa de línea de comandos (`eh3d-camdebug`) con 61 pruebas que se ejecutan en un ordenador: calcula el tiempo de un programa G-code y encuentra movimientos rápidos al material, movimientos fuera de la mesa, cortes con el husillo parado y cabezales sobre pinzas. Todavía no tiene ventana, no se ha probado en una máquina y no se ha comprobado con una colección de ficheros reales.
 
 ---
 
@@ -31,7 +31,7 @@
 |---|---|
 | Versión | `0.0.4` |
 | Madurez | Andamiaje |
-| Pruebas | 48 |
+| Pruebas | 61 |
 | Pila tecnológica | Rust |
 | En hardware real | No probado: nada de esto se ha ejecutado en una máquina |
 
@@ -47,7 +47,7 @@ Cada línea es una parte de este repositorio y la luz dice hasta dónde llega ho
 |---|---|---|
 | Núcleo | 🟡 | calcula el tiempo de un programa G-code y encuentra movimientos rápidos al material, movimientos fuera de la mesa, cortes con el husillo parado y cabezales sobre pinzas; probado en un ordenador con entradas normales y dañadas, no con una colección de ficheros reales. |
 | Línea de comandos | 🟡 | `eh3d-camdebug` ejecuta las mismas funciones que la biblioteca e imprime el resultado; cada error vuelve como mensaje y un código de salida distinto de cero. |
-| Pruebas | 🟡 | 48 pruebas pasan (`cargo test`), con casos normales, casos límite y entradas dañadas. |
+| Pruebas | 🟡 | 61 pruebas pasan (`cargo test`), con casos normales, casos límite y entradas dañadas. |
 | Seguridad | 🟡 | Rust seguro y simple (`forbid(unsafe_code)`): nada entra en pánico con los ficheros recibidos y un valor malo es un error con su motivo; sin revisión independiente. |
 | Ventana | 🔴 | Previsto: la ventana egui común a la suite; hoy solo existe la línea de comandos. |
 | Hardware real | 🔴 | No probado: nada de esto se ha ejecutado en una máquina. |
@@ -55,7 +55,7 @@ Cada línea es una parte de este repositorio y la luz dice hasta dónde llega ho
 
 ## 🎯 Resumen
 
-* **El tiempo** (`src/timeline.rs`): cada movimiento es un trapecio de velocidad de reposo a reposo con la aceleración y la velocidad rápida de la máquina; los arcos se miden a lo largo del arco, un corte sin avance usa uno por defecto y el total se reparte en corte y rápido. Es una cota superior: un controlador real no se detiene entre movimientos.
+* **El tiempo** (`src/timeline.rs`): cada movimiento es un trapecio de velocidad de reposo a reposo con la aceleración y la velocidad rápida de la máquina; los arcos se miden a lo largo del arco, un corte sin avance usa uno por defecto y el total se reparte en corte y rápido. Es una cota superior: un controlador real no se detiene entre movimientos. Las esperas de `G4` (`P` en segundos, en milisegundos en Marlin con `S` en segundos) no son movimientos y se suman aparte.
 * **Las alertas** (`src/checks.rs`): un movimiento rápido (G0) al material o de lado bajo la superficie, un movimiento fuera de la mesa, una Z por debajo de la más baja de la máquina y un cabezal que pasa sobre una pinza por debajo de su altura son alertas (código de salida 1); un corte con el husillo parado, un corte sin avance y un avance por encima de un límite son avisos. Un movimiento recto se prueba de forma exacta contra cada abrazadera, así que se encuentra incluso una más fina que cualquier paso.
 * **Lo que el lector no pudo entender** (compensación de radio, ciclos fijos, una línea dañada) aparece como alerta con su línea, de modo que un programa mal leído nunca se da por limpio.
 * **Arcos, `--strict` y los códigos que mueven el origen:** los límites de la mesa y las bridas se comprueban a lo largo del arco de un G2 o G3, no de su cuerda; `--strict` convierte cada aviso en alerta (código de salida 1), para un flujo que usa el código de salida como barrera antes de la máquina; un programa con G92, G53, G28, G30 o G10 se señala en vez de pasar por limpio.
@@ -138,7 +138,7 @@ cargo run --release -- check examples/sample.nc --table 100,80 --clamp 20,-5,30,
 
 ## 🧪 Pruebas
 
-El conjunto tiene 48 pruebas (`cargo test`, ejecutadas en Windows y Linux en el CI). Comprueban los casos normales, los casos límite y las entradas dañadas: ficheros vacíos, basura y ficheros cortados nunca provocan un pánico. El CI ejecuta además `cargo fmt --check`, `cargo clippy` con las advertencias como errores y `python -I tools/ci_validate.py`.
+El conjunto tiene 61 pruebas (`cargo test`, ejecutadas en Windows y Linux en el CI). Comprueban los casos normales, los casos límite y las entradas dañadas: ficheros vacíos, basura y ficheros cortados nunca provocan un pánico. El CI ejecuta además `cargo fmt --check`, `cargo clippy` con las advertencias como errores y `python -I tools/ci_validate.py`.
 
 ## 🏗️ Compilación y publicación
 
