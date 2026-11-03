@@ -11,11 +11,11 @@ dependencies = [
 
 [[package]]
 name = "eh3d-parser-common"
-version = "0.0.5"
+version = "0.0.6"
 
 [[package]]
 name = "eh3d-parser-gcode"
-version = "0.0.5"
+version = "0.0.6"
 dependencies = [
  "eh3d-parser-common",
 ]
