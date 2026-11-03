@@ -23,7 +23,7 @@ permissions:
 
 env:
   # The tag of each sibling repository this one is built against (name=tag, separated by spaces); a sibling that is not listed is taken at main.
-  SIBLING_REFS: "EH3D-CORE-LIBS=v0.0.4"
+  SIBLING_REFS: "EH3D-CORE-LIBS=v0.0.5"
 
 jobs:
   rust:
