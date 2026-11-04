@@ -670,7 +670,7 @@ fn program_file(name: &str, text: &str) -> std::path::PathBuf {
 }
 
 #[test]
-fn the_exit_code_is_zero_for_a_clean_program_one_for_an_alert_and_two_for_a_mistake() {
+fn the_exit_code_is_zero_for_a_clean_program_one_for_an_alert_and_for_a_failure() {
     let clean = program_file("clean.nc", "G21 G90\nM3 S1000\nG1 X10 F100\nM2\n");
     let alert = program_file("alert.nc", "G21 G90\nG0 Z-1\nM2\n");
     let (c, o, _) = camdebug(&["check", clean.to_str().unwrap()]);
@@ -679,22 +679,23 @@ fn the_exit_code_is_zero_for_a_clean_program_one_for_an_alert_and_two_for_a_mist
     let (c, o, _) = camdebug(&["check", alert.to_str().unwrap()]);
     assert_eq!(c, Some(1), "{o}");
     assert!(o.contains("ALERT") && o.contains("line 2"));
+    // a file that cannot be read is a failure
     let (c, _, e) = camdebug(&["check", "none-such-file.nc"]);
-    assert_eq!(c, Some(2));
+    assert_eq!(c, Some(1));
     assert!(e.contains("none-such-file.nc"));
 }
 
 #[test]
-fn strict_turns_a_warning_into_an_exit_code_of_one() {
+fn a_warning_is_exit_code_two_and_strict_turns_it_into_one() {
     let f = program_file("warn.nc", "G21 G90\nG1 Z-1 F100\nM2\n");
     let path = f.to_str().unwrap();
-    assert_eq!(camdebug(&["check", path]).0, Some(0));
+    assert_eq!(camdebug(&["check", path]).0, Some(2));
     let (c, o, _) = camdebug(&["check", path, "--strict"]);
     assert_eq!(c, Some(1));
     assert!(o.contains("ALERT") && !o.contains("warning line"), "{o}");
     assert_eq!(
         camdebug(&["check", "--strict", path]).0,
-        Some(2),
+        Some(1),
         "the file comes first: --strict is not a file"
     );
 }
@@ -716,13 +717,13 @@ fn bad_options_are_mistakes_that_name_the_option() {
         (vec!["check"], "needs a G-code file"),
     ] {
         let (c, _, e) = camdebug(&args);
-        assert_eq!(c, Some(2), "{args:?}");
+        assert_eq!(c, Some(64), "{args:?}");
         assert!(e.contains(word), "{args:?}: {e}");
     }
     // an unknown command is refused before the file is read
-    assert_eq!(camdebug(&["frobnicate", p]).0, Some(2));
+    assert_eq!(camdebug(&["frobnicate", p]).0, Some(64));
     let (c, _, e) = camdebug(&["frobnicate", "no-such-file.nc"]);
-    assert_eq!(c, Some(2));
+    assert_eq!(c, Some(64));
     assert!(e.contains("unknown command"), "{e}");
 }
 
@@ -745,11 +746,14 @@ fn a_huge_or_negative_size_limit_is_an_error_or_accepted_but_never_a_crash() {
     let p = f.to_str().unwrap();
     for v in ["-5", "0", "1e30", "18446744073709551616", "2.5"] {
         let (c, _, e) = camdebug(&["check", p, "--max-bytes", v]);
-        assert!(matches!(c, Some(0) | Some(2)), "--max-bytes {v}: {c:?} {e}");
+        assert!(
+            matches!(c, Some(0) | Some(1) | Some(64)),
+            "--max-bytes {v}: {c:?} {e}"
+        );
     }
     assert_eq!(
         camdebug(&["check", p, "--max-bytes", "0"]).0,
-        Some(2),
+        Some(1),
         "a file bigger than zero bytes is above the limit"
     );
 }
@@ -793,4 +797,35 @@ fn the_waits_of_g4_are_counted_apart_from_the_moves() {
     let marlin = parse("G4 P500\nG4 S2\n", Dialect::Marlin);
     assert!((dwell_s(&marlin) - 2.5).abs() < 1e-9);
     assert_eq!(dwell_s(&parse("G1 X1 F100\n", Dialect::Grbl)), 0.0);
+}
+
+#[test]
+fn every_exit_code_of_the_convention_is_given_for_what_it_means() {
+    let clean = program_file("code_clean.nc", "G21 G90\nM3 S1000\nG1 X10 F100\nM2\n");
+    let warning = program_file("code_warning.nc", "G21 G90\nG1 Z-1 F100\nM2\n");
+    let alert = program_file("code_alert.nc", "G21 G90\nG0 Z-1\nM2\n");
+    let (clean, warning, alert) = (
+        clean.to_str().unwrap(),
+        warning.to_str().unwrap(),
+        alert.to_str().unwrap(),
+    );
+    assert_eq!(camdebug(&["check", clean]).0, Some(0), "nothing to say");
+    assert_eq!(camdebug(&["check", alert]).0, Some(1), "an alert");
+    assert_eq!(camdebug(&["check", warning]).0, Some(2), "only warnings");
+    assert_eq!(
+        camdebug(&["check", "none-such.nc"]).0,
+        Some(1),
+        "cannot be read"
+    );
+    assert_eq!(
+        camdebug(&["check", clean, "--powr", "1"]).0,
+        Some(64),
+        "wrong use"
+    );
+    assert_eq!(camdebug(&["help"]).0, Some(0));
+    assert_eq!(
+        camdebug(&["steps", warning]).0,
+        Some(0),
+        "steps has nothing to warn about"
+    );
 }

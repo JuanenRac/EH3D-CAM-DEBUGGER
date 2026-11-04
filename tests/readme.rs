@@ -78,7 +78,7 @@ fn run(args: &[String], tag: &str) -> (bool, String, String) {
         .expect("the program runs");
     let _ = std::fs::remove_dir_all(&dir);
     (
-        matches!(out.status.code(), Some(0) | Some(1)),
+        matches!(out.status.code(), Some(0) | Some(1) | Some(2)),
         String::from_utf8_lossy(&out.stdout).into_owned(),
         String::from_utf8_lossy(&out.stderr).into_owned(),
     )

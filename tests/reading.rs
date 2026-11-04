@@ -65,16 +65,16 @@ fn the_command_line_applies_the_limit_the_encoding_and_the_filter() {
     fs::write(&file, latin1()).unwrap();
     let f = file.to_str().unwrap();
     let (code, out, _) = run(&["check", f]);
-    assert_eq!(code, Some(0), "{out}");
+    assert_eq!(code, Some(2), "only warnings: {out}");
     assert!(out.contains("[input-not-utf8]"), "{out}");
     assert!(out.contains("[unknown-g-code]"), "{out}");
     let (_, out, _) = run(&["check", f, "--ignore", "input-not-utf8,unknown-g-code"]);
     assert!(out.contains("no findings"), "{out}");
     let (code, _, err) = run(&["check", f, "--max-bytes", "10"]);
-    assert_eq!(code, Some(2));
+    assert_eq!(code, Some(1));
     assert!(err.contains("above the limit"), "{err}");
     let (code, _, err) = run(&["check", f, "--ignore", "no-such-code"]);
-    assert_eq!(code, Some(2));
+    assert_eq!(code, Some(64));
     assert!(err.contains("not a code"), "{err}");
     let _ = fs::remove_dir_all(&dir);
 }
@@ -102,7 +102,7 @@ fn the_refusal_of_a_program_over_the_limit_is_written_in_the_language_of_the_sys
             .output()
             .unwrap();
         let err = String::from_utf8_lossy(&out.stderr).into_owned();
-        assert_eq!(out.status.code(), Some(2), "{lang}: {err}");
+        assert_eq!(out.status.code(), Some(1), "{lang}: {err}");
         assert!(err.contains(word), "{lang}: {err}");
     }
     let _ = fs::remove_dir_all(&dir);

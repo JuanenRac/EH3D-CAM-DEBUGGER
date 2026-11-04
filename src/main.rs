@@ -13,7 +13,7 @@ use std::process::ExitCode;
 
 const HELP: &str = "eh3d-camdebug: checks a G-code program before it reaches a machine
 
-  eh3d-camdebug check FILE.nc [options]     the time, the findings; exit code 1 when there is an alert
+  eh3d-camdebug check FILE.nc [options]     the time, the findings; exit code 1 when there is an alert, 2 when there are only warnings, 64 for a wrong option
   eh3d-camdebug steps FILE.nc [options]     every move with its line, length and time
 
 Options: --accel MM_S2 (500)  --rapid MM_MIN (3000)  --feed MM_MIN (300, used when a cut has no feed)  --dialect grbl|marlin|planetcnc
@@ -158,18 +158,31 @@ fn too_large(size: usize, limit: usize) -> String {
     }
 }
 
-fn run(mut args: Vec<String>) -> Result<bool, String> {
+/// How a run ends badly, for the exit code of the convention of the suite: a wrong use is 64, a failure (a file that cannot be read, a limit, a check that cannot run) is 1.
+enum Fail {
+    Usage(String),
+    Failed(String),
+}
+
+impl From<String> for Fail {
+    fn from(message: String) -> Fail {
+        Fail::Failed(message)
+    }
+}
+
+/// The exit code of a run: 0 nothing to say, 1 an alert, 2 only warnings (64 and 1 for the runs that failed are in `main`).
+fn run(mut args: Vec<String>) -> Result<u8, Fail> {
     if args.is_empty() || matches!(args[0].as_str(), "help" | "--help" | "-h") {
         println!("{HELP}");
-        return Ok(true);
+        return Ok(0);
     }
     let cmd = args.remove(0);
     // an unknown command is refused before any file is read
     if !matches!(cmd.as_str(), "check" | "steps") {
-        return Err(format!("{cmd}: unknown command (see help)"));
+        return Err(Fail::Usage(format!("{cmd}: unknown command (see help)")));
     }
     if args.is_empty() {
-        return Err(format!("{cmd} needs a G-code file"));
+        return Err(Fail::Usage(format!("{cmd} needs a G-code file")));
     }
     let file = args.remove(0);
     let Options {
@@ -178,7 +191,7 @@ fn run(mut args: Vec<String>) -> Result<bool, String> {
         dialect,
         strict: strict_mode,
         max_bytes,
-    } = parse_options(&args)?;
+    } = parse_options(&args).map_err(Fail::Usage)?;
     let bytes = read_file_limited(std::path::Path::new(&file), &InputLimits { max_bytes })
         .map_err(|e| match e {
             ReadError::TooLarge(InputError::TooLarge { size, limit }) => {
@@ -232,7 +245,13 @@ fn run(mut args: Vec<String>) -> Result<bool, String> {
             if findings.is_empty() {
                 println!("no findings");
             }
-            Ok(!has_alerts(&findings))
+            Ok(if has_alerts(&findings) {
+                1
+            } else if findings.is_empty() {
+                0
+            } else {
+                2
+            })
         }
         "steps" => {
             for t in &tl.steps {
@@ -245,19 +264,22 @@ fn run(mut args: Vec<String>) -> Result<bool, String> {
                     format_time(t.start_s)
                 );
             }
-            Ok(true)
+            Ok(0)
         }
-        other => Err(format!("{other}: unknown command (see help)")),
+        other => Err(Fail::Usage(format!("{other}: unknown command (see help)"))),
     }
 }
 
 fn main() -> ExitCode {
     match run(env::args().skip(1).collect()) {
-        Ok(true) => ExitCode::SUCCESS,
-        Ok(false) => ExitCode::from(1),
-        Err(e) => {
+        Ok(code) => ExitCode::from(code),
+        Err(Fail::Usage(e)) => {
             eprintln!("error: {e}");
-            ExitCode::from(2)
+            ExitCode::from(64)
+        }
+        Err(Fail::Failed(e)) => {
+            eprintln!("error: {e}");
+            ExitCode::from(1)
         }
     }
 }
