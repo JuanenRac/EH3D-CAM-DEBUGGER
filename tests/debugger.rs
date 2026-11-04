@@ -827,7 +827,10 @@ fn every_exit_code_of_the_convention_is_given_for_what_it_means() {
         camdebug(&["steps", warning]).0,
         Some(0),
         "steps has nothing to warn about"
+    );
+}
 
+#[test]
 fn a_missing_feed_is_told_once_per_move_and_can_be_silenced_by_its_code() {
     let program = "G21 G90\nM3 S10000\nG1 Z-1\nG1 X5\nM2\n";
     let told = check(&trace(program), &Limits::default());
