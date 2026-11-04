@@ -3,6 +3,7 @@
 All notable changes to this project are documented here.
 
 ## [Unreleased]
+- **The exit codes follow the convention of the suite:** 0 when there is nothing to say, 1 for an alert or a failure (a file that cannot be read, a limit), 2 when there are only warnings and 64 for a wrong option or command; `--strict` turns the warnings into 1.
 - **A missing feed is told once for each move:** the check no longer repeats what the reader says, and `--ignore feed-missing` silences it.
 - **The laser mode is read:** `--laser` reads `M3` or `M4` with `S0` as the laser being off, so a cut with the laser off is told.
 - **The application icon and the logos of the program:** `images/brand/` holds the icon (SVG, PNG sizes, `.ico` and `.icns`), the horizontal and vertical logos in a light and a dark version and the social preview image.
