@@ -193,6 +193,12 @@ fn run(mut args: Vec<String>) -> Result<u8, Fail> {
         return Err(Fail::Usage(format!("{cmd} needs a G-code file")));
     }
     let file = args.remove(0);
+    // the file comes first, as the help says: an option in its place is a wrong use, not a file that cannot be read
+    if file.starts_with("--") {
+        return Err(Fail::Usage(format!(
+            "{file}: the file comes first, before the options (see help)"
+        )));
+    }
     let Options {
         machine,
         limits,

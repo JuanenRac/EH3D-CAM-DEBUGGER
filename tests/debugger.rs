@@ -695,8 +695,8 @@ fn a_warning_is_exit_code_two_and_strict_turns_it_into_one() {
     assert!(o.contains("ALERT") && !o.contains("warning line"), "{o}");
     assert_eq!(
         camdebug(&["check", "--strict", path]).0,
-        Some(1),
-        "the file comes first: --strict is not a file"
+        Some(64),
+        "the file comes first: --strict is not a file, it is a wrong use"
     );
 }
 
