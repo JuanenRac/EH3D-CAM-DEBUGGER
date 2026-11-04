@@ -3,8 +3,6 @@
 All notable changes to this project are documented here.
 
 ## [Unreleased]
-- **A missing feed is told once for each move:** the check no longer repeats what the reader says, and `--ignore feed-missing` silences it.
-- **The laser mode is read:** `--laser` reads `M3` or `M4` with `S0` as the laser being off, so a cut with the laser off is told.
 - **The application icon and the logos of the program:** `images/brand/` holds the icon (SVG, PNG sizes, `.ico` and `.icns`), the horizontal and vertical logos in a light and a dark version and the social preview image.
 - **Shared checks updated:** the validator also compares the badge and the Version row of the README with the manifest, fails when one of its checks cannot run, and the CHANGELOG step of the workflow reads the base branch from the environment.
 - **Unknown commands first:** an unknown command is refused before the file is read.

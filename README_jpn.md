@@ -79,7 +79,6 @@ EH3D-CAM-DEBUGGER は EH3D Fabrication Suite のプログラムの一つです�
 * **破損入力のテスト：** 空のファイル、ゴミデータ、巨大な数値、途中で切れたファイルも与え、どれもパニックしてはいけません。
 * **推測しない：** 意味のない値は、どの値かと理由を示すエラーになり、見かけだけ正しい結果にはなりません。
 * **unsafe コードなし：** ライブラリとプログラムに `#![forbid(unsafe_code)]`。
-* **送りの欠落は一度だけ知らせ、レーザーモードを読みます：** 送りのない移動ごとに指摘は 1 件で（`--ignore feed-missing` で消せます）、`--laser` は `S0` の `M3` または `M4` をレーザーが消えているものとして読みます。
 
 ## 🔒 セキュリティと安全
 
@@ -197,7 +196,7 @@ README とテキストは、英語、スペイン語、フランス語、イタ�
 * [EH3D-ISOCAM](https://github.com/JuanenRac/EH3D-ISOCAM): 銅箔の絶縁ミリング
 * [EH3D-ROUTEPRO](https://github.com/JuanenRac/EH3D-ROUTEPRO): 輪郭ミリング プログラム
 * [EH3D-AUTOLEVEL](https://github.com/JuanenRac/EH3D-AUTOLEVEL): 高さマップと G コードの補正
-* [EH3D-PHOENIX-CNC](https://github.com/JuanenRac/EH3D-PHOENIX-CNC): 機械制御プログラム
+* [EH3D-MOTIONCNC](https://github.com/JuanenRac/EH3D-MOTIONCNC): 機械制御プログラム
 
 ## 📚 ドキュメント
 
