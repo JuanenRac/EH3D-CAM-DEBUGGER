@@ -17,7 +17,7 @@
 
 ---
 
-**Comprobación de honestidad - lo que funciona hoy:** una biblioteca Rust y un programa de línea de comandos (`eh3d-camdebug`) con 63 pruebas que se ejecutan en un ordenador: calcula el tiempo de un programa G-code y encuentra movimientos rápidos al material, movimientos fuera de la mesa, cortes con el husillo parado y cabezales sobre pinzas. Todavía no tiene ventana, no se ha probado en una máquina y no se ha comprobado con una colección de ficheros reales.
+**Comprobación de honestidad - lo que funciona hoy:** una biblioteca Rust y un programa de línea de comandos (`eh3d-camdebug`) con 113 pruebas que se ejecutan en un ordenador: calcula el tiempo de un programa G-code y encuentra movimientos rápidos al material, movimientos fuera de la mesa, cortes con el husillo parado y cabezales sobre pinzas. Tiene una ventana (se compila con `--features gui`) que abre un programa G-code, dibuja su trayectoria en 2D, recorre los movimientos paso a paso con una tabla de líneas y muestra las alertas y advertencias, pero todavía no se ha visto en una pantalla; no se ha probado en una máquina y no se ha comprobado con una colección de ficheros reales.
 
 ---
 
@@ -30,7 +30,7 @@
 |---|---|
 | Versión | `0.0.4` |
 | Madurez | Andamiaje |
-| Pruebas | 63 |
+| Pruebas | 113 |
 | Pila tecnológica | Rust |
 | En hardware real | No probado: nada de esto se ha ejecutado en una máquina |
 
@@ -46,9 +46,9 @@ Cada línea es una parte de este repositorio y la luz dice hasta dónde llega ho
 |---|---|---|
 | Núcleo | 🟡 | calcula el tiempo de un programa G-code y encuentra movimientos rápidos al material, movimientos fuera de la mesa, cortes con el husillo parado y cabezales sobre pinzas; probado en un ordenador con entradas normales y dañadas, no con una colección de ficheros reales. |
 | Línea de comandos | 🟡 | `eh3d-camdebug` ejecuta las mismas funciones que la biblioteca e imprime el resultado; cada error vuelve como mensaje y un código de salida distinto de cero. |
-| Pruebas | 🟡 | 63 pruebas pasan (`cargo test`), con casos normales, casos límite y entradas dañadas. |
+| Pruebas | 🟡 | 113 pruebas pasan (`cargo test`), con casos normales, casos límite y entradas dañadas. |
 | Seguridad | 🟡 | Rust seguro y simple (`forbid(unsafe_code)`): nada entra en pánico con los ficheros recibidos y un valor malo es un error con su motivo; sin revisión independiente. |
-| Ventana | 🔴 | Previsto: la ventana egui común a la suite; hoy solo existe la línea de comandos. |
+| Ventana | 🟠 | Escrita (egui, `--features gui`): abrir o soltar un programa, ver su trayectoria en 2D, recorrer los movimientos paso a paso o reproducirlos, una tabla de movimientos, las alertas y advertencias, los ajustes de la máquina y los límites; su lógica está probada, pero todavía no se ha compilado ni visto en una pantalla. |
 | Hardware real | 🔴 | No probado: nada de esto se ha ejecutado en una máquina. |
 | Documentación | 🟡 | README en ocho idiomas, el registro de cambios y las dos imágenes dibujadas desde `docs/`. |
 
@@ -62,7 +62,7 @@ Cada línea es una parte de este repositorio y la luz dice hasta dónde llega ho
 
 ## 🧩 Papel en EH3D
 
-EH3D-CAM-DEBUGGER es un programa de la EH3D Fabrication Suite. Hoy funciona como biblioteca y línea de comandos; su ventana, con el aspecto que comparten los demás programas de la suite, está prevista. Lee y escribe ficheros simples, así que puede usarse solo o entre los demás programas.
+EH3D-CAM-DEBUGGER es un programa de la EH3D Fabrication Suite. Funciona como biblioteca y línea de comandos y, compilado con `--features gui`, como ventana con el aspecto que comparten los demás programas de la suite. Lee y escribe ficheros simples, así que puede usarse solo o entre los demás programas.
 
 ## 🏛️ Arquitectura
 
@@ -96,30 +96,11 @@ Cómo encajan las partes de este repositorio: quién lo usa, qué contiene y de 
 La biblioteca es `eh3d_cam_debugger` (`use eh3d_cam_debugger::...`); la línea de comandos es `eh3d-camdebug`. Las órdenes son estas; cada una imprime su resultado por la salida estándar e informa de un error por la salida de errores con un código de salida distinto de cero. No hay acceso a la red.
 
 ```text
-EH3D-CAM-DEBUGGER/
-├── src/
-│   ├── checks.rs                                una parte de la lógica
-│   ├── lib.rs                                   la biblioteca: lo que usa cada orden
-│   ├── main.rs                                  la línea de comandos
-│   └── timeline.rs                              una parte de la lógica
-├── tests/
-│   ├── debugger.rs                              pruebas de la biblioteca y la línea de comandos
-│   ├── reading.rs                               pruebas de lectura de ficheros: el límite de tamaño, texto que no es UTF-8, avisos por código
-│   └── readme.rs                                pruebas que ejecutan lo que prometen el README y los scripts run
-├── examples/
-│   └── sample.nc                                una muestra para probar el programa
-├── docs/
-│   ├── architecture.json                        datos de la imagen de Arquitectura
-│   └── structure.json                           datos de la imagen de Estructura
-├── tools/                                       comprobación del CI y del README y herramientas de imágenes
-├── images/                                      banner y las imágenes de Arquitectura y Estructura del repositorio
-├── .github/                                     flujos de CI y de publicación, plantillas de issues y pull requests
-├── eh3d.project.json                            manifiesto: versión, rol, madurez y comando de compilación
-├── Cargo.toml Cargo.lock                        el workspace y sus dependencias fijadas
-├── rust-toolchain.toml                          la toolchain de Rust fijada
-├── CHANGELOG.md                                 qué cambió en cada versión
-├── SECURITY.md SUPPORT.md                       cómo informar de una vulnerabilidad y dónde preguntar
-└── CONTRIBUTING.md CODE_OF_CONDUCT.md LICENSE   cómo contribuir, el código de conducta y la licencia
+eh3d-camdebug check FILE.nc [options]     the time, the findings; exit code 1 when there is an alert, 2 when there are only warnings, 64 for a wrong option
+eh3d-camdebug steps FILE.nc [options]     every move with its line, length and time
+eh3d-camdebug [gui] [FILE.nc]             the window (a build with --features gui); with no arguments it opens
+options: --accel MM_S2 (500)  --rapid MM_MIN (3000)  --feed MM_MIN (300)  --dialect grbl|marlin|planetcnc  --table WIDTH,DEPTH  --surface Z (0)  --min-z Z  --max-feed MM_MIN
+         --laser  --clamp X0,Y0,X1,Y1,HEIGHT  --strict  --ignore CODE[,CODE]  --max-bytes N
 ```
 
 ## ⚙️ Configuración
@@ -128,17 +109,18 @@ Todavía no hay fichero de configuración: lo que elige la persona se da como ar
 
 ## 🚀 Inicio rápido
 
-Necesita una cadena de herramientas Rust estable (1.75 o más reciente).
+Necesita una cadena de herramientas Rust estable (1.88 o más reciente).
 
 ```bash
 cargo build --release
 cargo test
 cargo run --release -- check examples/sample.nc --table 100,80 --clamp 20,-5,30,5,6
+cargo run --release --features gui   # the window
 ```
 
 ## 🧪 Pruebas
 
-El conjunto tiene 63 pruebas (`cargo test`, ejecutadas en Windows y Linux en el CI). Comprueban los casos normales, los casos límite y las entradas dañadas: ficheros vacíos, basura y ficheros cortados nunca provocan un pánico. El CI ejecuta además `cargo fmt --check`, `cargo clippy` con las advertencias como errores y `python -I tools/ci_validate.py`.
+El conjunto tiene 113 pruebas (`cargo test`, ejecutadas en Windows y Linux en el CI). Comprueban los casos normales, los casos límite y las entradas dañadas: ficheros vacíos, basura y ficheros cortados nunca provocan un pánico. El CI ejecuta además `cargo fmt --check`, `cargo clippy` con las advertencias como errores y `python -I tools/ci_validate.py`.
 
 ## 🏗️ Compilación y publicación
 
@@ -155,11 +137,26 @@ La versión está en `Cargo.toml` y en `eh3d.project.json`; cada versión tiene 
 
 ```text
 EH3D-CAM-DEBUGGER/
-├── crates/
-│   ├── eh3d-parser-gerber/                      lector Gerber RS-274X
-│   ├── eh3d-parser-excellon/                    lector de ficheros de taladrado Excellon
-│   └── eh3d-parser-gcode/                       lector e intérprete modal de G-code
-├── docs/                                        READERS.md, lo que promete cada lector y lo que no hace, y los datos de las dos imágenes
+├── src/
+│   ├── checks.rs                                una parte de la lógica
+│   ├── lib.rs                                   la biblioteca: lo que usa cada orden
+│   ├── main.rs                                  la línea de comandos
+│   ├── timeline.rs                              una parte de la lógica
+│   ├── browse.rs                                la lista de ficheros de la ventana que abre un fichero
+│   ├── gui.rs                                   la ventana (egui, con la característica gui): dibuja el estado y transmite lo que hace la persona
+│   ├── lang.rs                                  las palabras de la ventana en los ocho idiomas
+│   ├── viewport.rs                              zoom y desplazamiento de la imagen, en números simples
+│   └── window.rs                                el estado de la ventana sin pantalla: programa, ajustes, movimientos y pasos
+├── tests/
+│   ├── debugger.rs                              pruebas de la biblioteca y la línea de comandos
+│   ├── reading.rs                               pruebas de lectura de ficheros: el límite de tamaño, texto que no es UTF-8, avisos por código
+│   ├── readme.rs                                pruebas que ejecutan lo que prometen el README y los scripts run
+│   └── window_cli.rs                            pruebas de que una compilación sin la característica gui sigue siendo solo línea de comandos
+├── examples/
+│   └── sample.nc                                una muestra para probar el programa
+├── docs/
+│   ├── architecture.json                        datos de la imagen de Arquitectura
+│   └── structure.json                           datos de la imagen de Estructura
 ├── tools/                                       comprobación del CI y del README y herramientas de imágenes
 ├── images/                                      banner y las imágenes de Arquitectura y Estructura del repositorio
 ├── .github/                                     flujos de CI y de publicación, plantillas de issues y pull requests
@@ -177,14 +174,14 @@ EH3D-CAM-DEBUGGER/
 
 **Límites conocidos hoy**
 
-* Todavía no tiene ventana: solo existen la biblioteca y la línea de comandos.
+* La ventana todavía no se ha visto en una pantalla; muestra la trayectoria desde arriba (sin vista 3D) y los textos de los hallazgos son los de la biblioteca, en inglés.
 * No se ha probado en una máquina ni con una colección de ficheros reales y no ha tenido revisión independiente.
 * Todavía no hay simulación 3D ni retirada de material, y las pinzas son cajas que se describen a mano.
 
 **Siguiente**
 
 * Simular la retirada de material en 3D y comparar el resultado con la pieza, con la ventana de la suite.
-* Añadir la ventana con el aspecto compartido por los programas de la suite, en los ocho idiomas.
+* Ver la ventana en una pantalla y terminarla.
 * Probarlo con ficheros reales y con los demás programas de la suite.
 
 ## 🌍 Idiomas

@@ -17,7 +17,7 @@
 
 ---
 
-**正直さの確認 - 現在実際に動くもの：** Rust ライブラリとコマンドライン プログラム（`eh3d-camdebug`）で、コンピューター上で実行される 63 件のテストがあります：G コード プログラムの時間を計算し、材料への早送り、テーブル外の移動、主軸停止での切削、クランプ上を通るヘッドを見つけます。ウィンドウはまだなく、機械では試しておらず、実際のファイルの集まりでも確認していません。
+**正直さの確認 - 現在実際に動くもの：** Rust ライブラリとコマンドライン プログラム（`eh3d-camdebug`）で、コンピューター上で実行される 113 件のテストがあります：G コード プログラムの時間を計算し、材料への早送り、テーブル外の移動、主軸停止での切削、クランプ上を通るヘッドを見つけます。ウィンドウ（`--features gui` でビルド）はG コード プログラムを開き、経路を 2D で描き、行の表とともに移動を 1 つずつ順に確認でき、アラートと警告を表示するが、画面ではまだ確認しておらず、機械では試しておらず、実際のファイルの集まりでも確認していません。
 
 ---
 
@@ -30,7 +30,7 @@
 |---|---|
 | バージョン | `0.0.4` |
 | 成熟度 | 足場 |
-| テスト | 63 |
+| テスト | 113 |
 | 技術スタック | Rust |
 | 実機での動作 | 未試験：ここにあるものは機械で動かしたことがありません |
 
@@ -46,9 +46,9 @@
 |---|---|---|
 | コア | 🟡 | G コード プログラムの時間を計算し、材料への早送り、テーブル外の移動、主軸停止での切削、クランプ上を通るヘッドを見つけます。コンピューター上で通常入力と破損入力でテスト済み。実際のファイルの集まりでは未確認。 |
 | コマンドライン | 🟡 | `eh3d-camdebug` はライブラリと同じ関数を実行して結果を表示します。エラーはメッセージと 0 以外の終了コードで返ります。 |
-| テスト | 🟡 | 63 件のテストが通ります（`cargo test`）。通常ケース、境界ケース、破損入力を含みます。 |
+| テスト | 🟡 | 113 件のテストが通ります（`cargo test`）。通常ケース、境界ケース、破損入力を含みます。 |
 | セキュリティ | 🟡 | 安全な Rust のみ（`forbid(unsafe_code)`）。受け取ったファイルでパニックせず、不正な値は理由付きのエラーになります。独立したレビューはありません。 |
-| ウィンドウ | 🔴 | 予定：スイート共通の egui ウィンドウ。現在はコマンドラインのみです。 |
+| ウィンドウ | 🟠 | 作成済み（egui、`--features gui`）：プログラムを開くかドロップ、経路の 2D 表示、移動の 1 つずつの確認と再生、移動の表、アラートと警告、機械の設定と範囲。ロジックはテスト済みですが、まだビルドも画面での確認もしていません。 |
 | 実機 | 🔴 | 未試験：ここにあるものは機械で実行したことがありません。 |
 | ドキュメント | 🟡 | 8 言語の README、変更履歴、`docs/` から描いた 2 枚の図。 |
 
@@ -62,7 +62,7 @@
 
 ## 🧩 EH3D での役割
 
-EH3D-CAM-DEBUGGER は EH3D Fabrication Suite のプログラムの一つです。現在はライブラリとコマンドラインとして動作し、スイートの他のプログラムと共通の外観のウィンドウは予定です。単純なファイルを読み書きするため、単独でも他のプログラムの間でも使えます。
+EH3D-CAM-DEBUGGER は EH3D Fabrication Suite のプログラムの一つです。ライブラリとコマンドラインとして動作し、`--features gui` でビルドすると、スイートの他のプログラムと共通の外観のウィンドウとしても動作します。単純なファイルを読み書きするため、単独でも他のプログラムの間でも使えます。
 
 ## 🏛️ アーキテクチャ
 
@@ -96,30 +96,11 @@ EH3D-CAM-DEBUGGER は EH3D Fabrication Suite のプログラムの一つです�
 ライブラリは `eh3d_cam_debugger`（`use eh3d_cam_debugger::...`）、コマンドラインは `eh3d-camdebug` です。コマンドは次のとおりで、結果は標準出力に表示され、エラーは標準エラー出力に 0 以外の終了コードで報告されます。ネットワークアクセスはありません。
 
 ```text
-EH3D-CAM-DEBUGGER/
-├── src/
-│   ├── checks.rs                                ロジックの一部
-│   ├── lib.rs                                   ライブラリ：各コマンドが使うもの
-│   ├── main.rs                                  コマンドライン
-│   └── timeline.rs                              ロジックの一部
-├── tests/
-│   ├── debugger.rs                              ライブラリとコマンドラインのテスト
-│   ├── reading.rs                               ファイル読み込みのテスト：サイズ上限、UTF-8以外のテキスト、コード別の通知
-│   └── readme.rs                                READMEとrunスクリプトが約束する内容を実行するテスト
-├── examples/
-│   └── sample.nc                                試すためのサンプル
-├── docs/
-│   ├── architecture.json                        アーキテクチャ図のデータ
-│   └── structure.json                           構成図のデータ
-├── tools/                                       CI と README のチェック、図のツール
-├── images/                                      バナーとアーキテクチャ・リポジトリ構成の図
-├── .github/                                     CI とリリースのワークフロー、Issue と PR のテンプレート
-├── eh3d.project.json                            マニフェスト：バージョン、役割、成熟度、ビルドコマンド
-├── Cargo.toml Cargo.lock                        ワークスペースと固定された依存関係
-├── rust-toolchain.toml                          固定されたRustツールチェーン
-├── CHANGELOG.md                                 各バージョンの変更点
-├── SECURITY.md SUPPORT.md                       脆弱性の報告方法と問い合わせ先
-└── CONTRIBUTING.md CODE_OF_CONDUCT.md LICENSE   貢献方法、行動規範、ライセンス
+eh3d-camdebug check FILE.nc [options]     the time, the findings; exit code 1 when there is an alert, 2 when there are only warnings, 64 for a wrong option
+eh3d-camdebug steps FILE.nc [options]     every move with its line, length and time
+eh3d-camdebug [gui] [FILE.nc]             the window (a build with --features gui); with no arguments it opens
+options: --accel MM_S2 (500)  --rapid MM_MIN (3000)  --feed MM_MIN (300)  --dialect grbl|marlin|planetcnc  --table WIDTH,DEPTH  --surface Z (0)  --min-z Z  --max-feed MM_MIN
+         --laser  --clamp X0,Y0,X1,Y1,HEIGHT  --strict  --ignore CODE[,CODE]  --max-bytes N
 ```
 
 ## ⚙️ 設定
@@ -128,17 +109,18 @@ EH3D-CAM-DEBUGGER/
 
 ## 🚀 クイックスタート
 
-安定版の Rust ツールチェーン（1.75 以降）が必要です。
+安定版の Rust ツールチェーン（1.88 以降）が必要です。
 
 ```bash
 cargo build --release
 cargo test
 cargo run --release -- check examples/sample.nc --table 100,80 --clamp 20,-5,30,5,6
+cargo run --release --features gui   # the window
 ```
 
 ## 🧪 テスト
 
-テストは 63 件あります（`cargo test`、CI では Windows と Linux で実行）。通常ケース、境界ケース、破損入力を確認し、空のファイル、ゴミデータ、途中で切れたファイルでもパニックしません。CI は `cargo fmt --check`、警告をエラーにした `cargo clippy`、`python -I tools/ci_validate.py` も実行します。
+テストは 113 件あります（`cargo test`、CI では Windows と Linux で実行）。通常ケース、境界ケース、破損入力を確認し、空のファイル、ゴミデータ、途中で切れたファイルでもパニックしません。CI は `cargo fmt --check`、警告をエラーにした `cargo clippy`、`python -I tools/ci_validate.py` も実行します。
 
 ## 🏗️ ビルドとリリース
 
@@ -155,11 +137,26 @@ cargo run --release -- check examples/sample.nc --table 100,80 --clamp 20,-5,30,
 
 ```text
 EH3D-CAM-DEBUGGER/
-├── crates/
-│   ├── eh3d-parser-gerber/                      Gerber RS-274X リーダー
-│   ├── eh3d-parser-excellon/                    Excellon ドリル ファイル リーダー
-│   └── eh3d-parser-gcode/                       G コード リーダーとモーダル インタープリター
-├── docs/                                        READERS.md：各リーダーの約束と、しないこと。2 つの図のデータ
+├── src/
+│   ├── checks.rs                                ロジックの一部
+│   ├── lib.rs                                   ライブラリ：各コマンドが使うもの
+│   ├── main.rs                                  コマンドライン
+│   ├── timeline.rs                              ロジックの一部
+│   ├── browse.rs                                ファイルを開くウィンドウのファイル一覧
+│   ├── gui.rs                                   ウィンドウ（egui、gui 機能）：状態を描き、操作を伝える
+│   ├── lang.rs                                  ウィンドウの文言（8言語）
+│   ├── viewport.rs                              画像の拡大縮小と移動（単純な数値）
+│   └── window.rs                                画面なしのウィンドウの状態：プログラム、設定、移動、ステップ
+├── tests/
+│   ├── debugger.rs                              ライブラリとコマンドラインのテスト
+│   ├── reading.rs                               ファイル読み込みのテスト：サイズ上限、UTF-8以外のテキスト、コード別の通知
+│   ├── readme.rs                                READMEとrunスクリプトが約束する内容を実行するテスト
+│   └── window_cli.rs                            gui 機能なしのビルドがコマンドラインのままであることのテスト
+├── examples/
+│   └── sample.nc                                試すためのサンプル
+├── docs/
+│   ├── architecture.json                        アーキテクチャ図のデータ
+│   └── structure.json                           構成図のデータ
 ├── tools/                                       CI と README のチェック、図のツール
 ├── images/                                      バナーとアーキテクチャ・リポジトリ構成の図
 ├── .github/                                     CI とリリースのワークフロー、Issue と PR のテンプレート
@@ -177,14 +174,14 @@ EH3D-CAM-DEBUGGER/
 
 **現時点で分かっている制限**
 
-* ウィンドウはまだなく、ライブラリとコマンドラインだけがあります。
+* ウィンドウはまだ画面で確認しておらず、経路を真上から表示します（3D 表示なし）。検出結果の文章はライブラリのもので、英語です。
 * 機械でも実際のファイルの集まりでも試しておらず、独立したレビューも受けていません。
 * 3D シミュレーションと材料除去はまだなく、クランプは手で記述する直方体です。
 
 **次のステップ**
 
 * スイートのウィンドウで材料除去を 3D でシミュレートし、結果を部品と比較する。
-* スイート共通の外観で 8 言語のウィンドウを追加する。
+* ウィンドウを画面で確認して仕上げる。
 * 実際のファイルとスイートの他のプログラムで試す。
 
 ## 🌍 言語

@@ -2,7 +2,7 @@
   "repo": "EH3D-CAM-DEBUGGER",
   "ecosystem": "eh3d",
   "tagline": "A last look at a G-code program: time and alerts.",
-  "description": "EH3D-CAM-DEBUGGER is a Rust library and command line that read a G-code program with the interpreter of EH3D-CORE-LIBS, work out its time and look for rapid moves into the material, moves outside the table and heads over clamps.",
+  "description": "EH3D-CAM-DEBUGGER is a Rust library and command line that read a G-code program with the interpreter of EH3D-CORE-LIBS, work out its time and look for rapid moves into the material, moves outside the table and heads over clamps. Built with the gui feature it also has a window (egui) that opens a program, draws its path, goes through the moves step by step and shows the findings.",
   "columns": [
     "WHO USES IT",
     "THIS REPOSITORY",
@@ -57,6 +57,23 @@
       ]
     },
     {
+      "id": "window",
+      "column": 1,
+      "level": "untested",
+      "title": "window (gui feature)",
+      "lines": [
+        "state, steps and words are tested;",
+        "the drawing is not seen yet"
+      ],
+      "code": [
+        "src/window.rs::pub struct Window",
+        "src/viewport.rs::pub struct Viewport",
+        "src/lang.rs::pub enum Lang",
+        "src/browse.rs::pub struct Browser",
+        "src/gui.rs::pub fn run"
+      ]
+    },
+    {
       "id": "libs",
       "column": 2,
       "level": "external",
@@ -107,12 +124,18 @@
       "from": "timeline",
       "to": "file",
       "level": "tested"
+    },
+    {
+      "from": "person",
+      "to": "window",
+      "level": "untested"
     }
   ],
   "legend": {
-    "tested": "covered by tests on a computer (46 tests)",
+    "tested": "covered by tests on a computer (113 tests)",
     "config": "planned, not used today",
-    "external": "a person, a file or another repository"
+    "external": "a person, a file or another repository",
+    "untested": "written, not built or looked at on a screen yet"
   },
   "footer": "It has not looked at a program that ran on a real machine."
 }

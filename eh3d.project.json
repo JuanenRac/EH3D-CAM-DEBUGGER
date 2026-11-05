@@ -7,7 +7,8 @@
   "stack": "rust",
   "technologies": [
     "Rust",
-    "G-code"
+    "G-code",
+    "egui"
   ],
   "deployment_target": "user-pc",
   "maturity": "scaffolding",
@@ -19,7 +20,7 @@
     "EH3D-CORE-LIBS"
   ],
   "build": "cargo build --release; cargo test",
-  "notes": "Scaffolding v0.0.4: a library and a command line that read a G-code program with the interpreter of EH3D-CORE-LIBS, work out its time with the acceleration of the machine (an upper bound: every move from rest to rest) and look for what would hurt: a rapid move into the material, a move outside the table or below the lowest Z, a cut with the spindle off or with no feed, a feed above a limit and a head that passes over a clamp. No 3D simulation and no removal of material yet; nothing has been tried on a machine.",
+  "notes": "Scaffolding v0.0.4: a library and a command line that read a G-code program with the interpreter of EH3D-CORE-LIBS, work out its time with the acceleration of the machine (an upper bound: every move from rest to rest) and look for what would hurt: a rapid move into the material, a move outside the table or below the lowest Z, a cut with the spindle off or with no feed, a feed above a limit and a head that passes over a clamp. A window (egui, built with the gui feature: open a program, see its path from above, go through the moves step by step, read the findings) is written and its logic is tested, but it has not been looked at on a screen; no 3D simulation and no removal of material yet; nothing has been tried on a machine.",
   "native_version": {
     "file": "Cargo.toml",
     "pattern": "^version\\s*=\\s*\"(\\d+\\.\\d+\\.\\d+)\""
