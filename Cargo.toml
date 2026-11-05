@@ -23,7 +23,7 @@ gui = ["dep:eframe", "dep:png"]
 
 [dependencies]
 # the G-code reader and interpreter of the suite (a path dependency on the sibling repository)
-eh3d-parser-gcode = { version = ">=0.0.2", path = "../EH3D-CORE-LIBS/crates/eh3d-parser-gcode" }
+eh3d-parser-gcode = { version = ">=0.0.7", path = "../EH3D-CORE-LIBS/crates/eh3d-parser-gcode" }
 
 # the window
 eframe = { version = "0.37.0", default-features = false, features = ["glow", "default_fonts"], optional = true }
