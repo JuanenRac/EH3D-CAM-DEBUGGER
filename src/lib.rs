@@ -4,5 +4,11 @@
 //! Reads a G-code program with the interpreter of EH3D-CORE-LIBS, works out how long it takes with the acceleration of the machine and looks for what would hurt:
 //! a rapid move into the material, a move outside the table, a cut with the spindle off, a feed that is too fast or a head that passes over a clamp.
 
+pub mod browse;
 pub mod checks;
+#[cfg(feature = "gui")]
+pub mod gui;
+pub mod lang;
 pub mod timeline;
+pub mod viewport;
+pub mod window;

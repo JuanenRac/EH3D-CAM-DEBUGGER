@@ -112,7 +112,7 @@ fn arc_of(s: &Segment) -> Option<((f64, f64), f64, f64, f64)> {
 }
 
 /// The point of a move at `t` (0 at the start, 1 at the end): on the arc for G2 and G3, on the straight line for the rest.
-fn point_at(s: &Segment, t: f64) -> (f64, f64, f64) {
+pub fn point_at(s: &Segment, t: f64) -> (f64, f64, f64) {
     let z = s.from.z + (s.to.z - s.from.z) * t;
     match arc_of(s) {
         Some((center, r, a0, a1)) => {
