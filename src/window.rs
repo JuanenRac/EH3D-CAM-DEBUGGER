@@ -613,9 +613,7 @@ impl Window {
     }
 
     pub fn toggle_play(&mut self) {
-        if self.steps() == 0 {
-            self.playing = false;
-        } else if self.playing {
+        if self.steps() == 0 || self.playing {
             self.playing = false;
         } else {
             // from the end, playing starts again from the first move
