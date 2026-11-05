@@ -15,6 +15,7 @@ const HELP: &str = "eh3d-camdebug: checks a G-code program before it reaches a m
 
   eh3d-camdebug check FILE.nc [options]     the time, the findings; exit code 1 when there is an alert, 2 when there are only warnings, 64 for a wrong option
   eh3d-camdebug steps FILE.nc [options]     every move with its line, length and time
+  eh3d-camdebug [gui] [FILE.nc]             the window (a build with --features gui): with no arguments, with a program or with gui it opens; the commands above never open it
 
 Options: --accel MM_S2 (500)  --rapid MM_MIN (3000)  --feed MM_MIN (300, used when a cut has no feed)  --dialect grbl|marlin|planetcnc
          --table WIDTH,DEPTH  --surface Z (0)  --min-z Z  --max-feed MM_MIN  --laser (M3 or M4 with S0 is not burning)  --clamp X0,Y0,X1,Y1,HEIGHT (as many as needed)
@@ -185,6 +186,12 @@ fn run(mut args: Vec<String>) -> Result<u8, Fail> {
         return Ok(0);
     }
     let cmd = args.remove(0);
+    if cmd == "gui" {
+        // a build with the window never gets here (main opens it): this one is only a command line
+        return Err(Fail::Failed(
+            "this build has no window: build it with --features gui".into(),
+        ));
+    }
     // an unknown command is refused before any file is read
     if !matches!(cmd.as_str(), "check" | "steps") {
         return Err(Fail::Usage(format!("{cmd}: unknown command (see help)")));
@@ -285,8 +292,43 @@ fn run(mut args: Vec<String>) -> Result<u8, Fail> {
     }
 }
 
+/// Whether the program opens its window instead of running a command, and the program to open in it: no arguments, `gui` (with a program or without), or a single program given by
+/// the system to open (a name with an extension that is a file; the commands have none).
+#[cfg(feature = "gui")]
+fn window_request(args: &[String]) -> Option<Option<String>> {
+    match args {
+        [] => Some(None),
+        [a] if a == "gui" => Some(None),
+        [a, f] if a == "gui" => Some(Some(f.clone())),
+        [f] if !f.starts_with('-')
+            && std::path::Path::new(f).extension().is_some()
+            && std::path::Path::new(f).is_file() =>
+        {
+            Some(Some(f.clone()))
+        }
+        _ => None,
+    }
+}
+
+#[cfg(feature = "gui")]
+fn open_window(program: Option<String>) -> ExitCode {
+    let lang = eh3d_cam_debugger::lang::Lang::from_env();
+    match eh3d_cam_debugger::gui::run(program.map(std::path::PathBuf::from), lang) {
+        Ok(()) => ExitCode::SUCCESS,
+        Err(e) => {
+            eprintln!("error: the window could not be opened: {e}");
+            ExitCode::from(1)
+        }
+    }
+}
+
 fn main() -> ExitCode {
-    match run(env::args().skip(1).collect()) {
+    let args: Vec<String> = env::args().skip(1).collect();
+    #[cfg(feature = "gui")]
+    if let Some(program) = window_request(&args) {
+        return open_window(program);
+    }
+    match run(args) {
         Ok(code) => ExitCode::from(code),
         Err(Fail::Usage(e)) => {
             eprintln!("error: {e}");

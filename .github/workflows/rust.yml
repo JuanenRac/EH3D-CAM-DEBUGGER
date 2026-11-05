@@ -73,11 +73,17 @@ jobs:
       - uses: Swatinem/rust-cache@9d47c6ad4b02e050fd481d890b2ea34778fd09d6 # v2.7.8
         with:
           workspaces: EH3D-CAM-DEBUGGER
+      - name: Libraries of the window
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y libxkbcommon-dev libwayland-dev libx11-dev libxcursor-dev libxrandr-dev libxi-dev libgl1-mesa-dev
       - name: Format
         run: cargo fmt --check
         working-directory: EH3D-CAM-DEBUGGER
       - name: Lints
         run: cargo clippy --all-targets -- -D warnings
+        working-directory: EH3D-CAM-DEBUGGER
+      - name: Lints of the window
+        run: cargo clippy --all-targets --features gui -- -D warnings
         working-directory: EH3D-CAM-DEBUGGER
       - name: Tests
         run: cargo test --all-targets
