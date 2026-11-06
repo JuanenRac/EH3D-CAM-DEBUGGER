@@ -16,6 +16,7 @@ const HELP: &str = "eh3d-camdebug: checks a G-code program before it reaches a m
   eh3d-camdebug check FILE.nc [options]     the time, the findings; exit code 1 when there is an alert, 2 when there are only warnings, 64 for a wrong option
   eh3d-camdebug steps FILE.nc [options]     every move with its line, length and time
   eh3d-camdebug [gui] [FILE.nc]             the window (a build with --features gui): with no arguments, with a program or with gui it opens; the commands above never open it
+  eh3d-camdebug gui [FILE...] --shot OUT.png [--size WxH] [--theme forge|dark|light] [--wait N] [--lang CODE] [--replace]   a picture of the window (a build with --features gui)
 
 Options: --accel MM_S2 (500)  --rapid MM_MIN (3000)  --feed MM_MIN (300, used when a cut has no feed)  --dialect grbl|marlin|planetcnc
          --table WIDTH,DEPTH  --surface Z (0)  --min-z Z  --max-feed MM_MIN  --laser (M3 or M4 with S0 is not burning)  --clamp X0,Y0,X1,Y1,HEIGHT (as many as needed)
@@ -322,8 +323,44 @@ fn open_window(program: Option<String>) -> ExitCode {
     }
 }
 
+/// The picture mode: `--shot FILE.png` opens the window, saves what it draws as a PNG file and closes. The exit code is 0 when the file was written, 1 when it was not and 2 when the
+/// arguments are wrong.
+#[cfg(feature = "gui")]
+fn take_picture(args: &[String]) -> ExitCode {
+    let parsed = match eh3d_cam_debugger::shot::parse_window_args(args, 1) {
+        Ok(parsed) => parsed,
+        Err(e) => {
+            eprintln!("error: {e}");
+            return ExitCode::from(2);
+        }
+    };
+    let Some(request) = parsed.shot else {
+        eprintln!("error: --shot needs a file to write");
+        return ExitCode::from(2);
+    };
+    let lang = parsed
+        .lang
+        .unwrap_or_else(eh3d_cam_debugger::lang::Lang::from_env);
+    match eh3d_cam_debugger::gui::run_shot(parsed.files, lang, request) {
+        Ok(()) => ExitCode::SUCCESS,
+        Err(e) => {
+            eprintln!("error: the picture could not be taken: {e}");
+            ExitCode::from(1)
+        }
+    }
+}
+
 fn main() -> ExitCode {
     let args: Vec<String> = env::args().skip(1).collect();
+    if eh3d_cam_debugger::shot::wants_picture(&args) {
+        #[cfg(feature = "gui")]
+        return take_picture(&args);
+        #[cfg(not(feature = "gui"))]
+        {
+            eprintln!("error: this build has no window: build it with --features gui");
+            return ExitCode::from(1);
+        }
+    }
     #[cfg(feature = "gui")]
     if let Some(program) = window_request(&args) {
         return open_window(program);

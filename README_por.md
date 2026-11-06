@@ -17,7 +17,7 @@
 
 ---
 
-**Verificação de honestidade - o que funciona hoje:** uma biblioteca Rust e um programa de linha de comandos (`eh3d-camdebug`) com 113 testes que correm num computador: calcula o tempo de um programa G-code e encontra movimentos rápidos para o material, movimentos fora da mesa, cortes com o fuso parado e cabeçotes sobre grampos. Tem uma janela (compilada com `--features gui`) que abre um programa G-code, desenha a sua trajetória em 2D, percorre os movimentos passo a passo com uma tabela de linhas e mostra os alertas e avisos, mas a janela ainda não foi vista num ecrã; não foi experimentado numa máquina e não foi verificado com uma coleção de ficheiros reais.
+**Verificação de honestidade - o que funciona hoje:** uma biblioteca Rust e um programa de linha de comandos (`eh3d-camdebug`) com 123 testes que correm num computador: calcula o tempo de um programa G-code e encontra movimentos rápidos para o material, movimentos fora da mesa, cortes com o fuso parado e cabeçotes sobre grampos. Tem uma janela (compilada com `--features gui`) que abre um programa G-code, desenha a sua trajetória em 2D, percorre os movimentos passo a passo com uma tabela de linhas e mostra os alertas e avisos, mas a janela ainda não foi vista num ecrã; não foi experimentado numa máquina e não foi verificado com uma coleção de ficheiros reais.
 
 ---
 
@@ -30,7 +30,7 @@
 |---|---|
 | Versão | `0.0.5` |
 | Maturidade | Estrutura inicial |
-| Testes | 113 |
+| Testes | 123 |
 | Tecnologias | Rust |
 | Em hardware real | Não experimentado: nada disto correu numa máquina |
 
@@ -46,7 +46,7 @@ Cada linha é uma parte deste repositório e a luz diz até onde chega hoje. É 
 |---|---|---|
 | Núcleo | 🟡 | calcula o tempo de um programa G-code e encontra movimentos rápidos para o material, movimentos fora da mesa, cortes com o fuso parado e cabeçotes sobre grampos; testado num computador com entradas normais e danificadas, não com uma coleção de ficheiros reais. |
 | Linha de comandos | 🟡 | `eh3d-camdebug` executa as mesmas funções da biblioteca e imprime o resultado; cada erro volta como mensagem e código de saída diferente de zero. |
-| Testes | 🟡 | 113 testes passam (`cargo test`), com casos normais, casos-limite e entradas danificadas. |
+| Testes | 🟡 | 123 testes passam (`cargo test`), com casos normais, casos-limite e entradas danificadas. |
 | Segurança | 🟡 | Rust seguro e simples (`forbid(unsafe_code)`): nada entra em pânico com os ficheiros recebidos e um valor mau é um erro com o seu motivo; sem revisão independente. |
 | Janela | 🟠 | Escrita (egui, `--features gui`): abrir ou largar um programa, ver a sua trajetória em 2D, percorrer os movimentos passo a passo ou reproduzi-los, uma tabela de movimentos, os alertas e avisos, as definições da máquina e os limites; a sua lógica está testada, mas ainda não foi compilada nem vista num ecrã. |
 | Hardware real | 🔴 | Não experimentado: nada disto foi executado numa máquina. |
@@ -116,11 +116,14 @@ cargo build --release
 cargo test
 cargo run --release -- check examples/sample.nc --table 100,80 --clamp 20,-5,30,5,6
 cargo run --release --features gui   # the window
+cargo run --release --features gui -- --shot screen.png examples/sample.nc   # a picture of the window
 ```
+
+Para tirar uma captura da janela sem a abrir à mão, execute-o com `--shot FICHEIRO.png` (também `--size WxH`, `--theme forge|dark|light`, `--wait N`, `--lang CODE`, `--open FILE`, `--replace`): abre-se com esse tamanho, guarda o PNG, não guarda definições e fecha-se sozinho (código de saída 0 se o ficheiro foi escrito, 1 se não, 2 se os argumentos estiverem errados).
 
 ## 🧪 Testes
 
-O conjunto tem 113 testes (`cargo test`, executados em Windows e Linux no CI). Verificam os casos normais, os casos-limite e as entradas danificadas: ficheiros vazios, lixo e ficheiros cortados nunca provocam pânico. O CI executa ainda `cargo fmt --check`, `cargo clippy` com avisos como erros e `python -I tools/ci_validate.py`.
+O conjunto tem 123 testes (`cargo test`, executados em Windows e Linux no CI). Verificam os casos normais, os casos-limite e as entradas danificadas: ficheiros vazios, lixo e ficheiros cortados nunca provocam pânico. O CI executa ainda `cargo fmt --check`, `cargo clippy` com avisos como erros e `python -I tools/ci_validate.py`.
 
 ## 🏗️ Compilação e publicação
 
@@ -149,6 +152,7 @@ EH3D-CAM-DEBUGGER/
 │   ├── browse.rs                                a lista de ficheiros da janela que abre um ficheiro
 │   ├── gui.rs                                   a janela (egui, com a funcionalidade gui): desenha o estado e transmite o que a pessoa faz
 │   ├── lang.rs                                  as palavras da janela nos oito idiomas
+│   ├── shot.rs                                  o modo de captura da janela (--shot): os seus argumentos, lidos e verificados sem ecrã
 │   ├── viewport.rs                              zoom e deslocamento da imagem, em números simples
 │   └── window.rs                                o estado da janela sem ecrã: programa, definições, movimentos e passos
 ├── tests/

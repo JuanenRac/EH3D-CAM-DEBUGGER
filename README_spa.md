@@ -17,7 +17,7 @@
 
 ---
 
-**Comprobación de honestidad - lo que funciona hoy:** una biblioteca Rust y un programa de línea de comandos (`eh3d-camdebug`) con 113 pruebas que se ejecutan en un ordenador: calcula el tiempo de un programa G-code y encuentra movimientos rápidos al material, movimientos fuera de la mesa, cortes con el husillo parado y cabezales sobre pinzas. Tiene una ventana (se compila con `--features gui`) que abre un programa G-code, dibuja su trayectoria en 2D, recorre los movimientos paso a paso con una tabla de líneas y muestra las alertas y advertencias, pero todavía no se ha visto en una pantalla; no se ha probado en una máquina y no se ha comprobado con una colección de ficheros reales.
+**Comprobación de honestidad - lo que funciona hoy:** una biblioteca Rust y un programa de línea de comandos (`eh3d-camdebug`) con 123 pruebas que se ejecutan en un ordenador: calcula el tiempo de un programa G-code y encuentra movimientos rápidos al material, movimientos fuera de la mesa, cortes con el husillo parado y cabezales sobre pinzas. Tiene una ventana (se compila con `--features gui`) que abre un programa G-code, dibuja su trayectoria en 2D, recorre los movimientos paso a paso con una tabla de líneas y muestra las alertas y advertencias, pero todavía no se ha visto en una pantalla; no se ha probado en una máquina y no se ha comprobado con una colección de ficheros reales.
 
 ---
 
@@ -30,7 +30,7 @@
 |---|---|
 | Versión | `0.0.5` |
 | Madurez | Andamiaje |
-| Pruebas | 113 |
+| Pruebas | 123 |
 | Pila tecnológica | Rust |
 | En hardware real | No probado: nada de esto se ha ejecutado en una máquina |
 
@@ -46,7 +46,7 @@ Cada línea es una parte de este repositorio y la luz dice hasta dónde llega ho
 |---|---|---|
 | Núcleo | 🟡 | calcula el tiempo de un programa G-code y encuentra movimientos rápidos al material, movimientos fuera de la mesa, cortes con el husillo parado y cabezales sobre pinzas; probado en un ordenador con entradas normales y dañadas, no con una colección de ficheros reales. |
 | Línea de comandos | 🟡 | `eh3d-camdebug` ejecuta las mismas funciones que la biblioteca e imprime el resultado; cada error vuelve como mensaje y un código de salida distinto de cero. |
-| Pruebas | 🟡 | 113 pruebas pasan (`cargo test`), con casos normales, casos límite y entradas dañadas. |
+| Pruebas | 🟡 | 123 pruebas pasan (`cargo test`), con casos normales, casos límite y entradas dañadas. |
 | Seguridad | 🟡 | Rust seguro y simple (`forbid(unsafe_code)`): nada entra en pánico con los ficheros recibidos y un valor malo es un error con su motivo; sin revisión independiente. |
 | Ventana | 🟠 | Escrita (egui, `--features gui`): abrir o soltar un programa, ver su trayectoria en 2D, recorrer los movimientos paso a paso o reproducirlos, una tabla de movimientos, las alertas y advertencias, los ajustes de la máquina y los límites; su lógica está probada, pero todavía no se ha compilado ni visto en una pantalla. |
 | Hardware real | 🔴 | No probado: nada de esto se ha ejecutado en una máquina. |
@@ -116,11 +116,14 @@ cargo build --release
 cargo test
 cargo run --release -- check examples/sample.nc --table 100,80 --clamp 20,-5,30,5,6
 cargo run --release --features gui   # the window
+cargo run --release --features gui -- --shot screen.png examples/sample.nc   # a picture of the window
 ```
+
+Para sacar una captura de la ventana sin abrirla a mano, ejecútelo con `--shot FICHERO.png` (también `--size WxH`, `--theme forge|dark|light`, `--wait N`, `--lang CODE`, `--open FILE`, `--replace`): se abre con ese tamaño, guarda el PNG, no guarda ajustes y se cierra solo (código de salida 0 si se escribió el fichero, 1 si no, 2 si los argumentos están mal).
 
 ## 🧪 Pruebas
 
-El conjunto tiene 113 pruebas (`cargo test`, ejecutadas en Windows y Linux en el CI). Comprueban los casos normales, los casos límite y las entradas dañadas: ficheros vacíos, basura y ficheros cortados nunca provocan un pánico. El CI ejecuta además `cargo fmt --check`, `cargo clippy` con las advertencias como errores y `python -I tools/ci_validate.py`.
+El conjunto tiene 123 pruebas (`cargo test`, ejecutadas en Windows y Linux en el CI). Comprueban los casos normales, los casos límite y las entradas dañadas: ficheros vacíos, basura y ficheros cortados nunca provocan un pánico. El CI ejecuta además `cargo fmt --check`, `cargo clippy` con las advertencias como errores y `python -I tools/ci_validate.py`.
 
 ## 🏗️ Compilación y publicación
 
@@ -149,6 +152,7 @@ EH3D-CAM-DEBUGGER/
 │   ├── browse.rs                                la lista de ficheros de la ventana que abre un fichero
 │   ├── gui.rs                                   la ventana (egui, con la característica gui): dibuja el estado y transmite lo que hace la persona
 │   ├── lang.rs                                  las palabras de la ventana en los ocho idiomas
+│   ├── shot.rs                                  el modo de captura de la ventana (--shot): sus argumentos, leídos y comprobados sin pantalla
 │   ├── viewport.rs                              zoom y desplazamiento de la imagen, en números simples
 │   └── window.rs                                el estado de la ventana sin pantalla: programa, ajustes, movimientos y pasos
 ├── tests/

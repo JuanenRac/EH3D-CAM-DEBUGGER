@@ -9,6 +9,7 @@ pub mod checks;
 #[cfg(feature = "gui")]
 pub mod gui;
 pub mod lang;
+pub mod shot;
 pub mod timeline;
 pub mod viewport;
 pub mod window;
