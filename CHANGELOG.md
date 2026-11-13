@@ -4,6 +4,7 @@ All notable changes to this project are documented here.
 
 ## [Unreleased]
 
+- **The validation of the CI is the reusable one of the documentation hub:** the job `validate` calls `validate.yml` of EH3D-DOCS (pinned by commit) and the check of the CHANGELOG is a job of its own.
 ## [0.0.5] - The window that plays a toolpath move by move, the shared reader versions and the Windows icon
 
 - **Ready-made programs for every system:** the `Release binaries` workflow, started by hand by the owner from main, builds the window version for Windows (64 and 32 bits), Linux and macOS (Apple silicon and Intel), packs each with the licence, the README, the icon and the examples, writes the SHA-256 of every package, `SHA256SUMS` and a build manifest, attests their provenance, checks the result as a stranger would and, only when the dry run is switched off and the owner approves, prepares a draft release; the README has a Downloads section that tells how the signed packages are checked.
