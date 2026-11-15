@@ -12,7 +12,7 @@
   ],
   "deployment_target": "user-pc",
   "maturity": "functional",
-  "evidence": "host-test",
+  "evidence": "simulator",
   "hardware_bound": false,
   "family": "CNC Workflow Tools",
   "parent": null,
