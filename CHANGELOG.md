@@ -4,6 +4,7 @@ All notable changes to this project are documented here.
 
 ## [Unreleased]
 
+- **The README says the maturity of the manifest:** the badge and the Maturity row of the eight READMEs read functional, as the manifest does, and the check of the status lights now fails when they differ.
 - **Simulation of the machine against the debugger:** add `tests/machine_twin.rs`, a twin of the machine that reads the program on its own (it does not use the reader of the suite), moves with an acceleration, and notes what it hits: a rapid move into the material, a point off the table, a Z below the lowest and a cut with the spindle off. Programs from a seeded generator (some of them wrong) are run on it and the debugger must report the same lines and the same kinds of mistake, and the time it gives must be the time the twin takes to move; four mistakes and their repair show that the program put right is clean. Three tests cover them. Nothing has run on a real machine.
 
 - **The shared validation tools are updated:** the validator also runs the workflow and lessons checks of the suite with their latest rules, including a check to run before every push.
