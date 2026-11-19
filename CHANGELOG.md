@@ -4,6 +4,7 @@ All notable changes to this project are documented here.
 
 ## [Unreleased]
 
+- **The CI and the release build take the shared libraries at their newest releases:** the pins of the sibling repositories in the workflows are raised to the releases the program now needs, so that the build and the binaries of a release use them.
 ## [0.0.6] - Simulation of the machine against the debugger and the maturity said in the README
 
 - **The README says the maturity of the manifest:** the badge and the Maturity row of the eight READMEs read functional, as the manifest does, and the check of the status lights now fails when they differ.
