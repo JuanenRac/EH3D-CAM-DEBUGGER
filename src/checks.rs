@@ -310,6 +310,9 @@ pub fn has_alerts(findings: &[Finding]) -> bool {
     findings.iter().any(|f| f.level == Level::Alert)
 }
 
+/// The smallest and the largest corner of a box, each as X, Y and Z.
+pub type Corners = ((f64, f64, f64), (f64, f64, f64));
+
 /// What a program is made of, in numbers: how many moves of each kind, the box that everything that moved fits in, the tools it selects and the range of the cutting feeds.
 #[derive(Debug, Clone, PartialEq)]
 pub struct Summary {
@@ -317,7 +320,7 @@ pub struct Summary {
     pub straight_cuts: usize,
     pub arcs: usize,
     /// The smallest and the largest corner of everything that moved (`None` when nothing moved).
-    pub extent: Option<((f64, f64, f64), (f64, f64, f64))>,
+    pub extent: Option<Corners>,
     /// The numbers of the tools the program selects, from the smallest, once each.
     pub tools: Vec<u32>,
     /// The slowest and the fastest feed of the cutting moves that have one (`None` when none has).
