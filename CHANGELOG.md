@@ -4,11 +4,14 @@ All notable changes to this project are documented here.
 
 ## [Unreleased]
 
+## [0.0.7] - Checks of plunge feed and end height, numbers of the program and JSON output
+
 - **A limit for the feed of a plunge:** `--max-plunge MM_MIN` warns, with its line, depth and feed, of a plunge (a cutting move that goes down at least as far as it goes along in the plane, so a ramp at less than 45 degrees is not one) whose feed is above the limit; a plunge with no feed is left to the check of the missing feed, and nothing is checked unless the option is given.
 - **Two checks of how the program ends:** `--end-z Z` warns, on the last move, when the program ends with the tool below Z (still in the material, or too near to it) and `--require-end` warns when a program that moves does not end with `M2` or `M30`; both are off unless asked for and `--strict` makes them alerts like any other warning.
 - **`check` prints a summary of the program:** the extent of everything that moved (X, Y and Z), how many rapid moves, straight cuts and arcs there are, the tools the program selects (once each, in order) and the range of the feeds of its cutting moves.
 - **`check --json` prints the result as one JSON object:** the moves by kind, the lengths, the times (cutting, rapid, the waits of `G4` apart), the extent, the tools, the range of the feeds, whether the program ended and every finding with its line, its level and its message (the text is escaped; a number that is not finite is `null`); the exit code is the one of the text, and `steps --json` is a wrong use. The window does not take the new limits yet.
 - **The CI and the release build take the shared libraries at their newest releases:** the pins of the sibling repositories in the workflows are raised to the releases the program now needs, so that the build and the binaries of a release use them.
+
 ## [0.0.6] - Simulation of the machine against the debugger and the maturity said in the README
 
 - **The README says the maturity of the manifest:** the badge and the Maturity row of the eight READMEs read functional, as the manifest does, and the check of the status lights now fails when they differ.
