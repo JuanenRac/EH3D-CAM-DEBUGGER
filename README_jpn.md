@@ -17,7 +17,7 @@
 
 ---
 
-**正直さの確認 - 現在実際に動くもの：** Rust ライブラリとコマンドライン プログラム（`eh3d-camdebug`）で、コンピューター上で実行される 126 件のテストがあります：G コード プログラムの時間を計算し、材料への早送り、テーブル外の移動、主軸停止での切削、クランプ上を通るヘッドを見つけます。ウィンドウ（`--features gui` でビルド）はG コード プログラムを開き、経路を 2D で描き、行の表とともに移動を 1 つずつ順に確認でき、アラートと警告を表示するが、画面ではまだ確認しておらず、機械では試しておらず、実際のファイルの集まりでも確認していません。
+**正直さの確認 - 現在実際に動くもの：** Rust ライブラリとコマンドライン プログラム（`eh3d-camdebug`）で、コンピューター上で実行される 142 件のテストがあります：G コード プログラムの時間を計算し、材料への早送り、テーブル外の移動、主軸停止での切削、クランプ上を通るヘッドを見つけます。ウィンドウ（`--features gui` でビルド）はG コード プログラムを開き、経路を 2D で描き、行の表とともに移動を 1 つずつ順に確認でき、アラートと警告を表示するが、画面ではまだ確認しておらず、機械では試しておらず、実際のファイルの集まりでも確認していません。
 
 ---
 
@@ -30,7 +30,7 @@
 |---|---|
 | バージョン | `0.0.6` |
 | 成熟度 | 機能する |
-| テスト | 126 |
+| テスト | 142 |
 | 技術スタック | Rust |
 | 実機での動作 | 未試験：ここにあるものは機械で動かしたことがありません |
 
@@ -46,7 +46,7 @@
 |---|---|---|
 | コア | 🟡 | G コード プログラムの時間を計算し、材料への早送り、テーブル外の移動、主軸停止での切削、クランプ上を通るヘッドを見つけます。コンピューター上で通常入力と破損入力でテスト済み。実際のファイルの集まりでは未確認。 |
 | コマンドライン | 🟡 | `eh3d-camdebug` はライブラリと同じ関数を実行して結果を表示します。エラーはメッセージと 0 以外の終了コードで返ります。 |
-| テスト | 🟡 | 126 件のテストが通ります（`cargo test`）。通常ケース、境界ケース、破損入力を含みます。固定シードによるプログラムを実行してデバッガーと突き合わせるマシンのシミュレーション（障害の注入と復旧を含む）も含まれます。 |
+| テスト | 🟡 | 142 件のテストが通ります（`cargo test`）。通常ケース、境界ケース、破損入力を含みます。固定シードによるプログラムを実行してデバッガーと突き合わせるマシンのシミュレーション（障害の注入と復旧を含む）も含まれます。 |
 | セキュリティ | 🟡 | 安全な Rust のみ（`forbid(unsafe_code)`）。受け取ったファイルでパニックせず、不正な値は理由付きのエラーになります。独立したレビューはありません。 |
 | ウィンドウ | 🟠 | 作成済み（egui、`--features gui`）：プログラムを開くかドロップ、経路の 2D 表示、移動の 1 つずつの確認と再生、移動の表、アラートと警告、機械の設定と範囲。ロジックはテスト済みですが、まだビルドも画面での確認もしていません。 |
 | 実機 | 🔴 | 未試験：ここにあるものは機械で実行したことがありません。 |
@@ -80,6 +80,7 @@ EH3D-CAM-DEBUGGER は EH3D Fabrication Suite のプログラムの一つです�
 * **推測しない：** 意味のない値は、どの値かと理由を示すエラーになり、見かけだけ正しい結果にはなりません。
 * **unsafe コードなし：** ライブラリとプログラムに `#![forbid(unsafe_code)]`。
 * **送りの欠落は一度だけ知らせ、レーザーモードを読みます：** 送りのない移動ごとに指摘は 1 件で（`--ignore feed-missing` で消せます）、`--laser` は `S0` の `M3` または `M4` をレーザーが消えているものとして読みます。
+* **突っ込み送りの上限、プログラムの終わり方、サマリー、`--json`：** `--max-plunge MM_MIN` は、上限より速い突っ込み（進む距離以上に下がる切削移動）を警告し、`--end-z Z` はプログラムが Z より下に工具がある状態で終わる場合（最後の移動で）に警告し、`--require-end` は `M2` または `M30` で終わらない場合に警告します。いずれも指定しない限り確認されません。`check` はさらに、動いたすべての範囲、早送り・直線切削・円弧の数、プログラムが選択する工具、切削送りの範囲を表示し、`check --json` はそれらすべてと時間、各指摘を、同じ終了コードで、他のプログラム向けに 1 つの JSON オブジェクトとして表示します。ウィンドウはまだこの 3 つの上限を受け付けません。コンピューター上でのみテストしています。
 
 ## 🔒 セキュリティと安全
 
@@ -99,8 +100,8 @@ EH3D-CAM-DEBUGGER は EH3D Fabrication Suite のプログラムの一つです�
 eh3d-camdebug check FILE.nc [options]     the time, the findings; exit code 1 when there is an alert, 2 when there are only warnings, 64 for a wrong option
 eh3d-camdebug steps FILE.nc [options]     every move with its line, length and time
 eh3d-camdebug [gui] [FILE.nc]             the window (a build with --features gui); with no arguments it opens
-options: --accel MM_S2 (500)  --rapid MM_MIN (3000)  --feed MM_MIN (300)  --dialect grbl|marlin|planetcnc  --table WIDTH,DEPTH  --surface Z (0)  --min-z Z  --max-feed MM_MIN
-         --laser  --clamp X0,Y0,X1,Y1,HEIGHT  --strict  --ignore CODE[,CODE]  --max-bytes N
+options: --accel MM_S2 (500)  --rapid MM_MIN (3000)  --feed MM_MIN (300)  --dialect grbl|marlin|planetcnc  --table WIDTH,DEPTH  --surface Z (0)  --min-z Z  --max-feed MM_MIN  --max-plunge MM_MIN  --end-z Z
+         --laser  --clamp X0,Y0,X1,Y1,HEIGHT  --strict  --ignore CODE[,CODE]  --max-bytes N  --require-end  --json
 ```
 
 ## ⚙️ 設定
@@ -123,7 +124,7 @@ cargo run --release --features gui -- --shot screen.png examples/sample.nc   # a
 
 ## 🧪 テスト
 
-テストは 126 件あります（`cargo test`、CI では Windows と Linux で実行）。通常ケース、境界ケース、破損入力を確認し、空のファイル、ゴミデータ、途中で切れたファイルでもパニックしません。CI は `cargo fmt --check`、警告をエラーにした `cargo clippy`、`python -I tools/ci_validate.py` も実行します。
+テストは 142 件あります（`cargo test`、CI では Windows と Linux で実行）。通常ケース、境界ケース、破損入力を確認し、空のファイル、ゴミデータ、途中で切れたファイルでもパニックしません。CI は `cargo fmt --check`、警告をエラーにした `cargo clippy`、`python -I tools/ci_validate.py` も実行します。
 
 ## 🏗️ ビルドとリリース
 

@@ -17,7 +17,7 @@
 
 ---
 
-**诚实检查 - 当前真正能运行的内容：** 一个 Rust 库和一个命令行程序（`eh3d-camdebug`），有 126 个在电脑上运行的测试：计算 G 代码程序的时间，并找出快速进入材料、超出工作台、主轴停转时切削以及刀头经过夹具的情况。有一个窗口（用 `--features gui` 构建），可以打开 G 代码程序，以 2D 绘制其路径，借助行表逐步查看每一次移动，并显示警报和警告，但窗口尚未在屏幕上看过，没有在机器上试过，也没有用大量真实文件验证过。
+**诚实检查 - 当前真正能运行的内容：** 一个 Rust 库和一个命令行程序（`eh3d-camdebug`），有 142 个在电脑上运行的测试：计算 G 代码程序的时间，并找出快速进入材料、超出工作台、主轴停转时切削以及刀头经过夹具的情况。有一个窗口（用 `--features gui` 构建），可以打开 G 代码程序，以 2D 绘制其路径，借助行表逐步查看每一次移动，并显示警报和警告，但窗口尚未在屏幕上看过，没有在机器上试过，也没有用大量真实文件验证过。
 
 ---
 
@@ -30,7 +30,7 @@
 |---|---|
 | 版本 | `0.0.6` |
 | 成熟度 | 可用 |
-| 测试 | 126 |
+| 测试 | 142 |
 | 技术栈 | Rust |
 | 真实硬件 | 未试过：这里的任何内容都没有在机器上运行过 |
 
@@ -46,7 +46,7 @@
 |---|---|---|
 | 核心 | 🟡 | 计算 G 代码程序的时间，并找出快速进入材料、超出工作台、主轴停转时切削以及刀头经过夹具的情况；已在电脑上用正常和损坏的输入测试，未用大量真实文件验证。 |
 | 命令行 | 🟡 | `eh3d-camdebug` 运行与库相同的函数并打印结果；每个错误都以消息和非零退出码返回。 |
-| 测试 | 🟡 | 126 个测试通过（`cargo test`），包含正常情况、边界情况和损坏的输入。其中包括对运行程序并与调试器对照的机器的固定种子模拟，含注入故障与恢复。 |
+| 测试 | 🟡 | 142 个测试通过（`cargo test`），包含正常情况、边界情况和损坏的输入。其中包括对运行程序并与调试器对照的机器的固定种子模拟，含注入故障与恢复。 |
 | 安全 | 🟡 | 纯安全 Rust（`forbid(unsafe_code)`）：处理收到的文件时不会 panic，错误的值会返回带原因的错误；没有独立审查。 |
 | 窗口 | 🟠 | 已编写（egui，`--features gui`）：打开或拖入程序、以 2D 查看路径、逐步或连续播放每次移动、移动表、警报和警告、机器设置和范围；其逻辑已测试，但尚未构建，也尚未在屏幕上看过。 |
 | 真实硬件 | 🔴 | 未试过：这里的任何内容都没有在机器上运行过。 |
@@ -80,6 +80,7 @@ EH3D-CAM-DEBUGGER 是 EH3D Fabrication Suite 的一个程序。它以库和命�
 * **不猜测：** 没有意义的值是一个说明哪个值、为什么的错误，绝不是只是看起来正确的结果。
 * **没有 unsafe 代码：** 库和程序中都有 `#![forbid(unsafe_code)]`。
 * **缺少进给只提示一次，并能读取激光模式：** 每个没有进给的移动只给出一条发现（`--ignore feed-missing` 可使其静默），`--laser` 把带 `S0` 的 `M3` 或 `M4` 视为激光关闭。
+* **切入进给上限、程序的结束方式、摘要和 `--json`：** `--max-plunge MM_MIN` 会警告快于该上限的切入（向下移动距离不小于沿平面移动距离的切削移动），`--end-z Z` 会在程序结束时刀具低于 Z（在其最后一次移动处）时警告，`--require-end` 会在程序不以 `M2` 或 `M30` 结束时警告；除非提出要求，否则都不会检查。`check` 还会输出所有移动的范围、快速移动、直线切削和圆弧的数量、程序选择的刀具以及切削进给的范围，`check --json` 则将这些内容连同时间和每一项发现作为单个 JSON 对象输出，供其他程序使用，退出码相同。窗口暂不支持这三个上限。仅在计算机上测试过。
 
 ## 🔒 安全与防护
 
@@ -99,8 +100,8 @@ EH3D-CAM-DEBUGGER 是 EH3D Fabrication Suite 的一个程序。它以库和命�
 eh3d-camdebug check FILE.nc [options]     the time, the findings; exit code 1 when there is an alert, 2 when there are only warnings, 64 for a wrong option
 eh3d-camdebug steps FILE.nc [options]     every move with its line, length and time
 eh3d-camdebug [gui] [FILE.nc]             the window (a build with --features gui); with no arguments it opens
-options: --accel MM_S2 (500)  --rapid MM_MIN (3000)  --feed MM_MIN (300)  --dialect grbl|marlin|planetcnc  --table WIDTH,DEPTH  --surface Z (0)  --min-z Z  --max-feed MM_MIN
-         --laser  --clamp X0,Y0,X1,Y1,HEIGHT  --strict  --ignore CODE[,CODE]  --max-bytes N
+options: --accel MM_S2 (500)  --rapid MM_MIN (3000)  --feed MM_MIN (300)  --dialect grbl|marlin|planetcnc  --table WIDTH,DEPTH  --surface Z (0)  --min-z Z  --max-feed MM_MIN  --max-plunge MM_MIN  --end-z Z
+         --laser  --clamp X0,Y0,X1,Y1,HEIGHT  --strict  --ignore CODE[,CODE]  --max-bytes N  --require-end  --json
 ```
 
 ## ⚙️ 配置
@@ -123,7 +124,7 @@ cargo run --release --features gui -- --shot screen.png examples/sample.nc   # a
 
 ## 🧪 测试
 
-测试套件有 126 个测试（`cargo test`，CI 在 Windows 和 Linux 上运行）。它们检查正常情况、边界情况和损坏的输入：空文件、乱码和被截断的文件绝不会 panic。CI 还运行 `cargo fmt --check`、把警告当作错误的 `cargo clippy` 以及 `python -I tools/ci_validate.py`。
+测试套件有 142 个测试（`cargo test`，CI 在 Windows 和 Linux 上运行）。它们检查正常情况、边界情况和损坏的输入：空文件、乱码和被截断的文件绝不会 panic。CI 还运行 `cargo fmt --check`、把警告当作错误的 `cargo clippy` 以及 `python -I tools/ci_validate.py`。
 
 ## 🏗️ 构建与发布
 

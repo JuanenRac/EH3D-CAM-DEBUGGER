@@ -17,7 +17,7 @@
 
 ---
 
-**Vérification d'honnêteté - ce qui fonctionne aujourd'hui :** une bibliothèque Rust et un programme en ligne de commande (`eh3d-camdebug`) avec 126 tests exécutés sur un ordinateur : calcule le temps d'un programme G-code et trouve les mouvements rapides dans la matière, les mouvements hors de la table, les coupes broche arrêtée et les têtes au-dessus de pinces. Il a une fenêtre (compilée avec `--features gui`) qui ouvre un programme G-code, dessine son trajet en 2D, parcourt les mouvements pas à pas avec un tableau des lignes et montre les alertes et avertissements, mais la fenêtre n'a pas encore été vue sur un écran ; n'a pas été essayé sur une machine et n'a pas été vérifié sur une collection de fichiers réels.
+**Vérification d'honnêteté - ce qui fonctionne aujourd'hui :** une bibliothèque Rust et un programme en ligne de commande (`eh3d-camdebug`) avec 142 tests exécutés sur un ordinateur : calcule le temps d'un programme G-code et trouve les mouvements rapides dans la matière, les mouvements hors de la table, les coupes broche arrêtée et les têtes au-dessus de pinces. Il a une fenêtre (compilée avec `--features gui`) qui ouvre un programme G-code, dessine son trajet en 2D, parcourt les mouvements pas à pas avec un tableau des lignes et montre les alertes et avertissements, mais la fenêtre n'a pas encore été vue sur un écran ; n'a pas été essayé sur une machine et n'a pas été vérifié sur une collection de fichiers réels.
 
 ---
 
@@ -30,7 +30,7 @@
 |---|---|
 | Version | `0.0.6` |
 | Maturité | Fonctionnel |
-| Tests | 126 |
+| Tests | 142 |
 | Pile technique | Rust |
 | Sur du matériel réel | Non essayé : rien ici n'a fonctionné sur une machine |
 
@@ -46,7 +46,7 @@ Chaque ligne est une partie de ce dépôt et le feu dit où elle en est aujourd'
 |---|---|---|
 | Cœur | 🟡 | calcule le temps d'un programme G-code et trouve les mouvements rapides dans la matière, les mouvements hors de la table, les coupes broche arrêtée et les têtes au-dessus de pinces ; testé sur un ordinateur avec des entrées normales et abîmées, pas avec une collection de fichiers réels. |
 | Ligne de commande | 🟡 | `eh3d-camdebug` exécute les mêmes fonctions que la bibliothèque et affiche le résultat ; chaque erreur revient sous forme de message et de code de sortie non nul. |
-| Tests | 🟡 | 126 tests passent (`cargo test`), avec des cas normaux, des cas limites et des entrées abîmées. Elles incluent une simulation à graine fixe de une machine qui exécute le programme et que l'on confronte au débogueur, avec pannes injectées et reprise. |
+| Tests | 🟡 | 142 tests passent (`cargo test`), avec des cas normaux, des cas limites et des entrées abîmées. Elles incluent une simulation à graine fixe de une machine qui exécute le programme et que l'on confronte au débogueur, avec pannes injectées et reprise. |
 | Sécurité | 🟡 | Rust sûr et simple (`forbid(unsafe_code)`) : rien ne panique sur les fichiers reçus et une mauvaise valeur est une erreur avec sa raison ; pas de revue indépendante. |
 | Fenêtre | 🟠 | Écrite (egui, `--features gui`) : ouvrir ou déposer un programme, voir son trajet en 2D, parcourir les mouvements pas à pas ou les lire, un tableau des mouvements, les alertes et avertissements, les réglages de la machine et les limites ; sa logique est testée, mais elle n'a pas encore été compilée ni vue sur un écran. |
 | Matériel réel | 🔴 | Non essayé : rien ici n'a été exécuté sur une machine. |
@@ -80,6 +80,7 @@ Comment les parties de ce dépôt s'articulent : qui l'utilise, ce qu'il contien
 * **Sans deviner :** une valeur absurde est une erreur qui dit laquelle et pourquoi, jamais un résultat qui n'en a que l'air.
 * **Pas de code unsafe :** `#![forbid(unsafe_code)]` dans la bibliothèque et le programme.
 * **Une avance manquante est signalée une fois, et le mode laser est lu :** chaque déplacement sans avance donne un seul constat (`--ignore feed-missing` le fait taire), et `--laser` lit `M3` ou `M4` avec `S0` comme un laser éteint.
+* **Une limite d'avance de plongée, la fin du programme, un résumé et `--json` :** `--max-plunge MM_MIN` signale une plongée (un mouvement de coupe qui descend au moins autant qu'il avance) plus rapide que la limite, `--end-z Z` signale que le programme se termine avec l'outil sous Z (sur son dernier mouvement) et `--require-end` signale qu'il ne se termine pas par `M2` ou `M30` ; rien de cela n'est vérifié sans être demandé. `check` affiche aussi l'étendue de tout ce qui a bougé, le nombre de déplacements rapides, de coupes droites et d'arcs, les outils que le programme sélectionne et la plage de ses avances de coupe, et `check --json` affiche tout cela, les temps et chaque constat sous la forme d'un seul objet JSON pour d'autres programmes, avec le même code de sortie. La fenêtre ne prend pas encore ces trois limites. Testé uniquement sur un ordinateur.
 
 ## 🔒 Sécurité et protection
 
@@ -99,8 +100,8 @@ La bibliothèque est `eh3d_cam_debugger` (`use eh3d_cam_debugger::...`) ; la lig
 eh3d-camdebug check FILE.nc [options]     the time, the findings; exit code 1 when there is an alert, 2 when there are only warnings, 64 for a wrong option
 eh3d-camdebug steps FILE.nc [options]     every move with its line, length and time
 eh3d-camdebug [gui] [FILE.nc]             the window (a build with --features gui); with no arguments it opens
-options: --accel MM_S2 (500)  --rapid MM_MIN (3000)  --feed MM_MIN (300)  --dialect grbl|marlin|planetcnc  --table WIDTH,DEPTH  --surface Z (0)  --min-z Z  --max-feed MM_MIN
-         --laser  --clamp X0,Y0,X1,Y1,HEIGHT  --strict  --ignore CODE[,CODE]  --max-bytes N
+options: --accel MM_S2 (500)  --rapid MM_MIN (3000)  --feed MM_MIN (300)  --dialect grbl|marlin|planetcnc  --table WIDTH,DEPTH  --surface Z (0)  --min-z Z  --max-feed MM_MIN  --max-plunge MM_MIN  --end-z Z
+         --laser  --clamp X0,Y0,X1,Y1,HEIGHT  --strict  --ignore CODE[,CODE]  --max-bytes N  --require-end  --json
 ```
 
 ## ⚙️ Configuration
@@ -123,7 +124,7 @@ Pour prendre une capture de la fenêtre sans l'ouvrir à la main, lancez-la avec
 
 ## 🧪 Tests
 
-La suite compte 126 tests (`cargo test`, exécutés sous Windows et Linux dans le CI). Ils vérifient les cas normaux, les cas limites et les entrées abîmées : fichiers vides, bruit et fichiers coupés ne font jamais paniquer. Le CI exécute aussi `cargo fmt --check`, `cargo clippy` avec les avertissements comme erreurs et `python -I tools/ci_validate.py`.
+La suite compte 142 tests (`cargo test`, exécutés sous Windows et Linux dans le CI). Ils vérifient les cas normaux, les cas limites et les entrées abîmées : fichiers vides, bruit et fichiers coupés ne font jamais paniquer. Le CI exécute aussi `cargo fmt --check`, `cargo clippy` avec les avertissements comme erreurs et `python -I tools/ci_validate.py`.
 
 ## 🏗️ Compilation et publication
 

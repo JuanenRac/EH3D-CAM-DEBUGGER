@@ -17,7 +17,7 @@
 
 ---
 
-**Honesty check - what actually runs today:** a Rust library and a command line program (`eh3d-camdebug`) with 126 tests that run on a computer: works out the time of a G-code program and finds rapid moves into the material, moves outside the table, cuts with the spindle off and heads over clamps. It has a window (built with `--features gui`) that opens a G-code program, draws its path in 2D, goes through the moves step by step with a table of the lines and shows the alerts and warnings, but the window has not been looked at on a screen yet; it has not been tried on a machine and it has not been checked against a collection of real files.
+**Honesty check - what actually runs today:** a Rust library and a command line program (`eh3d-camdebug`) with 142 tests that run on a computer: works out the time of a G-code program and finds rapid moves into the material, moves outside the table, cuts with the spindle off and heads over clamps. It has a window (built with `--features gui`) that opens a G-code program, draws its path in 2D, goes through the moves step by step with a table of the lines and shows the alerts and warnings, but the window has not been looked at on a screen yet; it has not been tried on a machine and it has not been checked against a collection of real files.
 
 ---
 
@@ -30,7 +30,7 @@
 |---|---|
 | Version | `0.0.6` |
 | Maturity | Functional |
-| Tests | 126 |
+| Tests | 142 |
 | Stack | Rust |
 | On real hardware | Not tried: nothing here has run on a machine |
 
@@ -46,7 +46,7 @@ Each line is one part of this repository and the light says how far it is today.
 |---|---|---|
 | Core | 🟡 | works out the time of a G-code program and finds rapid moves into the material, moves outside the table, cuts with the spindle off and heads over clamps; tested on a computer with normal and damaged input, not with a collection of real files. |
 | Command line | 🟡 | `eh3d-camdebug` runs the same functions as the library and prints the result; every error comes back as a message and a non-zero exit code. |
-| Tests | 🟡 | 126 tests pass (`cargo test`), with normal cases, edge cases and damaged input. They include a seeded simulation of a machine that runs the program and is held against the debugger with injected faults and recovery. |
+| Tests | 🟡 | 142 tests pass (`cargo test`), with normal cases, edge cases and damaged input. They include a seeded simulation of a machine that runs the program and is held against the debugger with injected faults and recovery. |
 | Security | 🟡 | Plain safe Rust (`forbid(unsafe_code)`): nothing panics on the files it is given and a bad value is an error with its reason; no independent review. |
 | Window | 🟠 | Written (egui, `--features gui`): open or drop a program, see its path in 2D, go through the moves step by step or play them, a table of the moves, the alerts and warnings, the settings of the machine and the limits; its logic is tested, but it has not been built or looked at on a screen yet. |
 | Real hardware | 🔴 | Not tried: nothing here has been run on a machine. |
@@ -80,6 +80,7 @@ How the parts of this repository fit together: who uses it, what it holds and wh
 * **No guessing:** a value that does not make sense is an error that says which value and why, never a result that only looks right.
 * **No unsafe code:** `#![forbid(unsafe_code)]` in the library and the program.
 * **A missing feed is told once, and the laser mode is read:** each move without a feed gives one finding (`--ignore feed-missing` silences it), and `--laser` reads `M3` or `M4` with `S0` as the laser being off.
+* **A plunge feed limit, how the program ends, a summary and `--json`:** `--max-plunge MM_MIN` warns of a plunge (a cutting move that goes down at least as far as it goes along) faster than the limit, `--end-z Z` warns when the program ends with the tool below Z (on its last move) and `--require-end` warns when it does not end with `M2` or `M30`; none of them is checked unless it is asked for. `check` also prints the extent of everything that moved, how many rapid moves, straight cuts and arcs there are, the tools the program selects and the range of its cutting feeds, and `check --json` prints all of it, the times and every finding as one JSON object for other programs, with the same exit code. The window does not take these three limits yet. Tested on a computer only.
 
 ## 🔒 Security & Safety
 
@@ -99,8 +100,8 @@ The library is `eh3d_cam_debugger` (`use eh3d_cam_debugger::...`); the command l
 eh3d-camdebug check FILE.nc [options]     the time, the findings; exit code 1 when there is an alert, 2 when there are only warnings, 64 for a wrong option
 eh3d-camdebug steps FILE.nc [options]     every move with its line, length and time
 eh3d-camdebug [gui] [FILE.nc]             the window (a build with --features gui); with no arguments it opens
-options: --accel MM_S2 (500)  --rapid MM_MIN (3000)  --feed MM_MIN (300)  --dialect grbl|marlin|planetcnc  --table WIDTH,DEPTH  --surface Z (0)  --min-z Z  --max-feed MM_MIN
-         --laser  --clamp X0,Y0,X1,Y1,HEIGHT  --strict  --ignore CODE[,CODE]  --max-bytes N
+options: --accel MM_S2 (500)  --rapid MM_MIN (3000)  --feed MM_MIN (300)  --dialect grbl|marlin|planetcnc  --table WIDTH,DEPTH  --surface Z (0)  --min-z Z  --max-feed MM_MIN  --max-plunge MM_MIN  --end-z Z
+         --laser  --clamp X0,Y0,X1,Y1,HEIGHT  --strict  --ignore CODE[,CODE]  --max-bytes N  --require-end  --json
 ```
 
 ## ⚙️ Configuration
@@ -123,7 +124,7 @@ To take a picture of the window without opening it by hand, run it with `--shot 
 
 ## 🧪 Testing
 
-The suite has 126 tests (`cargo test`, run on Windows and Linux in the CI). They check the normal cases, the edge cases and damaged input: empty files, garbage and cut files never panic. The CI also runs `cargo fmt --check`, `cargo clippy` with warnings as errors and `python -I tools/ci_validate.py`.
+The suite has 142 tests (`cargo test`, run on Windows and Linux in the CI). They check the normal cases, the edge cases and damaged input: empty files, garbage and cut files never panic. The CI also runs `cargo fmt --check`, `cargo clippy` with warnings as errors and `python -I tools/ci_validate.py`.
 
 ## 🏗️ Build & Release
 

@@ -2,7 +2,9 @@
 // Copyright (C) 2026 JuanenRac (Electro Hobby 3D). GPL-3.0-or-later.
 #![forbid(unsafe_code)]
 
-use eh3d_cam_debugger::checks::{check, has_alerts, strict, Clamp, Level, Limits};
+use eh3d_cam_debugger::checks::{
+    check, check_json, has_alerts, strict, summary, Clamp, Level, Limits,
+};
 use eh3d_cam_debugger::timeline::{dwell_s, format_time, timeline, Machine};
 use eh3d_parser_gcode::{
     codes, interpret_with, parse_bytes_with, read_file_limited, Dialect, InputError, InputLimits,
@@ -20,7 +22,10 @@ const HELP: &str = "eh3d-camdebug: checks a G-code program before it reaches a m
 
 Options: --accel MM_S2 (500)  --rapid MM_MIN (3000)  --feed MM_MIN (300, used when a cut has no feed)  --dialect grbl|marlin|planetcnc
          --table WIDTH,DEPTH  --surface Z (0)  --min-z Z  --max-feed MM_MIN  --laser (M3 or M4 with S0 is not burning)  --clamp X0,Y0,X1,Y1,HEIGHT (as many as needed)
+         --max-plunge MM_MIN (warn of a plunge, a cut that goes down at least as far as it goes along, faster than that)  --end-z Z (warn when the program ends with the tool below Z)
+         --require-end (warn when the program does not end with M2 or M30)
          --strict (every warning is an alert too: exit code 1 for a cut with the spindle off, for one)
+         --json (check prints one JSON object, with the findings, instead of the text; the exit code is the same)
          --ignore CODE[,CODE] (leave out the notices of the reader with those codes, for example line-too-long)  --max-bytes N (the largest file, 268435456 by default)
 The time is an upper bound: every move is counted from rest to rest.";
 
@@ -42,6 +47,7 @@ struct Options {
     dialect: Dialect,
     strict: bool,
     laser: bool,
+    json: bool,
     max_bytes: usize,
 }
 
@@ -61,11 +67,22 @@ fn parse_options(args: &[String]) -> Result<Options, String> {
     let (mut m, mut l, mut d) = (Machine::default(), Limits::default(), Dialect::Grbl);
     let mut strict = false;
     let mut laser = false;
+    let mut json = false;
     let mut max_bytes = InputLimits::default().max_bytes;
     let mut i = 0;
     while i < args.len() {
         if args[i] == "--strict" {
             strict = true;
+            i += 1;
+            continue;
+        }
+        if args[i] == "--json" {
+            json = true;
+            i += 1;
+            continue;
+        }
+        if args[i] == "--require-end" {
+            l.require_end = true;
             i += 1;
             continue;
         }
@@ -86,6 +103,14 @@ fn parse_options(args: &[String]) -> Result<Options, String> {
             "--surface" => l.surface_z = nums(&value()?, 1, "--surface")?[0],
             "--min-z" => l.min_z = Some(nums(&value()?, 1, "--min-z")?[0]),
             "--max-feed" => l.max_feed_mm_min = Some(nums(&value()?, 1, "--max-feed")?[0]),
+            "--max-plunge" => {
+                let v = nums(&value()?, 1, "--max-plunge")?[0];
+                if v <= 0.0 {
+                    return Err("--max-plunge must be more than 0".into());
+                }
+                l.max_plunge_mm_min = Some(v);
+            }
+            "--end-z" => l.end_z = Some(nums(&value()?, 1, "--end-z")?[0]),
             "--ignore" => l.ignore_codes.extend(ignored_codes(&value()?)?),
             "--max-bytes" => max_bytes = nums(&value()?, 1, "--max-bytes")?[0] as usize,
             "--table" => {
@@ -125,6 +150,7 @@ fn parse_options(args: &[String]) -> Result<Options, String> {
         dialect: d,
         strict,
         laser,
+        json,
         max_bytes,
     })
 }
@@ -213,6 +239,7 @@ fn run(mut args: Vec<String>) -> Result<u8, Fail> {
         dialect,
         strict: strict_mode,
         laser,
+        json,
         max_bytes,
     } = parse_options(&args).map_err(Fail::Usage)?;
     let bytes = read_file_limited(std::path::Path::new(&file), &InputLimits { max_bytes })
@@ -227,6 +254,31 @@ fn run(mut args: Vec<String>) -> Result<u8, Fail> {
     let trace = interpret_with(&program, &InterpretOptions { s0_is_off: laser });
     let tl = timeline(&trace, &machine)?;
     match cmd.as_str() {
+        "check" if json => {
+            let mut findings = check(&trace, &limits);
+            if strict_mode {
+                strict(&mut findings);
+            }
+            println!(
+                "{}",
+                check_json(
+                    &trace,
+                    tl.total_s,
+                    tl.cutting_s,
+                    tl.rapid_s,
+                    dwell_s(&program),
+                    &findings
+                )
+            );
+            Ok(if has_alerts(&findings) {
+                1
+            } else if findings.is_empty() {
+                0
+            } else {
+                2
+            })
+        }
+        "steps" if json => Err(Fail::Usage("--json is an option of check".into())),
         "check" => {
             println!(
                 "{} moves: {:.1} mm of cut, {:.1} mm of rapid",
@@ -240,6 +292,24 @@ fn run(mut args: Vec<String>) -> Result<u8, Fail> {
                 format_time(tl.cutting_s),
                 format_time(tl.rapid_s)
             );
+            let s = summary(&trace);
+            if let Some((lo, hi)) = s.extent {
+                println!(
+                    "extent: X {:.3} to {:.3}, Y {:.3} to {:.3}, Z {:.3} to {:.3} mm",
+                    lo.0, hi.0, lo.1, hi.1, lo.2, hi.2
+                );
+            }
+            println!(
+                "{} rapid moves, {} straight cuts, {} arcs",
+                s.rapid_moves, s.straight_cuts, s.arcs
+            );
+            if !s.tools.is_empty() {
+                let tools: Vec<String> = s.tools.iter().map(|t| format!("T{t}")).collect();
+                println!("tools: {}", tools.join(", "));
+            }
+            if let Some((lo, hi)) = s.feed_range {
+                println!("cutting feeds: {lo:.0} to {hi:.0} mm/min");
+            }
             // the waits (G4) are not moves: they are added apart so that the time is not understated
             let waits = dwell_s(&program);
             if waits > 0.0 {

@@ -37,6 +37,12 @@ pub struct Limits {
     pub min_z: Option<f64>,
     /// The fastest cutting feed that makes sense, in mm/min; `None` does not check it.
     pub max_feed_mm_min: Option<f64>,
+    /// The fastest feed of a plunge (a cutting move that goes down at least as far as it goes along), in mm/min; `None` does not check it.
+    pub max_plunge_mm_min: Option<f64>,
+    /// The lowest Z the program may end at; ending below it (the tool still in the material or too near to it) is a warning; `None` does not check it.
+    pub end_z: Option<f64>,
+    /// A program that does not end with M2 or M30 is a warning.
+    pub require_end: bool,
     pub clamps: Vec<Clamp>,
     /// The codes of the notices of the reader that are not reported (see the codes of `eh3d_parser_gcode`).
     pub ignore_codes: Vec<String>,
@@ -49,6 +55,9 @@ impl Default for Limits {
             surface_z: 0.0,
             min_z: None,
             max_feed_mm_min: None,
+            max_plunge_mm_min: None,
+            end_z: None,
+            require_end: false,
             clamps: Vec::new(),
             ignore_codes: Vec::new(),
         }
@@ -213,6 +222,19 @@ pub fn check(trace: &Trace, limits: &Limits) -> Vec<Finding> {
                 });
             }
         }
+        if let Some(max) = limits.max_plunge_mm_min {
+            let down = s.from.z - s.to.z;
+            if !rapid && down > EPS && plan_length(s) <= down && s.feed > max {
+                out.push(Finding {
+                    line: s.line,
+                    level: Level::Warning,
+                    message: format!(
+                        "the plunge of {down:.3} mm goes down at {:.0} mm/min, above the plunge limit of {max:.0}",
+                        s.feed
+                    ),
+                });
+            }
+        }
         if let Some(min_z) = limits.min_z {
             if lo < min_z - EPS {
                 out.push(Finding {
@@ -256,6 +278,28 @@ pub fn check(trace: &Trace, limits: &Limits) -> Vec<Finding> {
             }
         }
     }
+    // how the program ends: where the tool is left and whether the program is closed
+    if let Some(last) = trace.segments.last() {
+        if let Some(z) = limits.end_z {
+            if last.to.z < z - EPS {
+                out.push(Finding {
+                    line: last.line,
+                    level: Level::Warning,
+                    message: format!(
+                        "the program ends with the tool at Z {:.3}, below the end height of {z:.3}",
+                        last.to.z
+                    ),
+                });
+            }
+        }
+        if limits.require_end && !trace.ended {
+            out.push(Finding {
+                line: last.line,
+                level: Level::Warning,
+                message: "the program does not end with M2 or M30".into(),
+            });
+        }
+    }
     // the notices of the reader were collected first: put every finding in the order of the program (a stable sort keeps the order inside a line)
     out.sort_by_key(|f| f.line);
     out.dedup_by(|a, b| a.line == b.line && a.message == b.message);
@@ -264,4 +308,146 @@ pub fn check(trace: &Trace, limits: &Limits) -> Vec<Finding> {
 
 pub fn has_alerts(findings: &[Finding]) -> bool {
     findings.iter().any(|f| f.level == Level::Alert)
+}
+
+/// What a program is made of, in numbers: how many moves of each kind, the box that everything that moved fits in, the tools it selects and the range of the cutting feeds.
+#[derive(Debug, Clone, PartialEq)]
+pub struct Summary {
+    pub rapid_moves: usize,
+    pub straight_cuts: usize,
+    pub arcs: usize,
+    /// The smallest and the largest corner of everything that moved (`None` when nothing moved).
+    pub extent: Option<((f64, f64, f64), (f64, f64, f64))>,
+    /// The numbers of the tools the program selects, from the smallest, once each.
+    pub tools: Vec<u32>,
+    /// The slowest and the fastest feed of the cutting moves that have one (`None` when none has).
+    pub feed_range: Option<(f64, f64)>,
+}
+
+/// The summary of a trace.
+pub fn summary(trace: &Trace) -> Summary {
+    let mut s = Summary {
+        rapid_moves: 0,
+        straight_cuts: 0,
+        arcs: 0,
+        extent: None,
+        tools: Vec::new(),
+        feed_range: None,
+    };
+    for seg in &trace.segments {
+        match seg.motion {
+            Motion::Rapid => s.rapid_moves += 1,
+            Motion::Linear => s.straight_cuts += 1,
+            Motion::ArcCw { .. } | Motion::ArcCcw { .. } => s.arcs += 1,
+        }
+        if let Some(t) = seg.tool {
+            if !s.tools.contains(&t) {
+                s.tools.push(t);
+            }
+        }
+        if !matches!(seg.motion, Motion::Rapid) && seg.feed > 0.0 {
+            s.feed_range = Some(match s.feed_range {
+                Some((lo, hi)) => (lo.min(seg.feed), hi.max(seg.feed)),
+                None => (seg.feed, seg.feed),
+            });
+        }
+    }
+    s.tools.sort_unstable();
+    if !trace.segments.is_empty() {
+        s.extent = Some((
+            (trace.min.x, trace.min.y, trace.min.z),
+            (trace.max.x, trace.max.y, trace.max.z),
+        ));
+    }
+    s
+}
+
+/// A text as a JSON string, with its quotes.
+pub fn json_string(s: &str) -> String {
+    let mut out = String::with_capacity(s.len() + 2);
+    out.push('"');
+    for c in s.chars() {
+        match c {
+            '"' => out.push_str("\\\""),
+            '\\' => out.push_str("\\\\"),
+            '\n' => out.push_str("\\n"),
+            '\r' => out.push_str("\\r"),
+            '\t' => out.push_str("\\t"),
+            c if (c as u32) < 0x20 => out.push_str(&format!("\\u{:04x}", c as u32)),
+            c => out.push(c),
+        }
+    }
+    out.push('"');
+    out
+}
+
+fn json_number(v: f64) -> String {
+    if v.is_finite() {
+        format!("{v}")
+    } else {
+        "null".into()
+    }
+}
+
+/// What `check --json` prints: one JSON object with the moves, the lengths, the times, the extent, the tools, the range of the feeds and the findings (line, level and message
+/// of each). The times are in seconds; `waits_s` is the time of the `G4` waits, which is not in `total_s`.
+pub fn check_json(
+    trace: &Trace,
+    total_s: f64,
+    cutting_s: f64,
+    rapid_s: f64,
+    waits_s: f64,
+    findings: &[Finding],
+) -> String {
+    let s = summary(trace);
+    let extent = match s.extent {
+        Some((lo, hi)) => format!(
+            "{{\"min\":[{},{},{}],\"max\":[{},{},{}]}}",
+            json_number(lo.0),
+            json_number(lo.1),
+            json_number(lo.2),
+            json_number(hi.0),
+            json_number(hi.1),
+            json_number(hi.2)
+        ),
+        None => "null".into(),
+    };
+    let feeds = match s.feed_range {
+        Some((lo, hi)) => format!("[{},{}]", json_number(lo), json_number(hi)),
+        None => "null".into(),
+    };
+    let tools: Vec<String> = s.tools.iter().map(|t| t.to_string()).collect();
+    let items: Vec<String> = findings
+        .iter()
+        .map(|f| {
+            format!(
+                "{{\"line\":{},\"level\":{},\"message\":{}}}",
+                f.line,
+                json_string(if f.level == Level::Alert {
+                    "alert"
+                } else {
+                    "warning"
+                }),
+                json_string(&f.message)
+            )
+        })
+        .collect();
+    format!(
+        "{{\"moves\":{},\"rapid_moves\":{},\"straight_cuts\":{},\"arcs\":{},\"cutting_mm\":{},\"rapid_mm\":{},\"total_s\":{},\"cutting_s\":{},\"rapid_s\":{},\"waits_s\":{},\"extent\":{},\"tools\":[{}],\"feed_range\":{},\"ended\":{},\"findings\":[{}]}}",
+        trace.segments.len(),
+        s.rapid_moves,
+        s.straight_cuts,
+        s.arcs,
+        json_number(trace.cutting_length_mm),
+        json_number(trace.rapid_length_mm),
+        json_number(total_s),
+        json_number(cutting_s),
+        json_number(rapid_s),
+        json_number(waits_s),
+        extent,
+        tools.join(","),
+        feeds,
+        trace.ended,
+        items.join(",")
+    )
 }

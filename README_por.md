@@ -17,7 +17,7 @@
 
 ---
 
-**Verificação de honestidade - o que funciona hoje:** uma biblioteca Rust e um programa de linha de comandos (`eh3d-camdebug`) com 126 testes que correm num computador: calcula o tempo de um programa G-code e encontra movimentos rápidos para o material, movimentos fora da mesa, cortes com o fuso parado e cabeçotes sobre grampos. Tem uma janela (compilada com `--features gui`) que abre um programa G-code, desenha a sua trajetória em 2D, percorre os movimentos passo a passo com uma tabela de linhas e mostra os alertas e avisos, mas a janela ainda não foi vista num ecrã; não foi experimentado numa máquina e não foi verificado com uma coleção de ficheiros reais.
+**Verificação de honestidade - o que funciona hoje:** uma biblioteca Rust e um programa de linha de comandos (`eh3d-camdebug`) com 142 testes que correm num computador: calcula o tempo de um programa G-code e encontra movimentos rápidos para o material, movimentos fora da mesa, cortes com o fuso parado e cabeçotes sobre grampos. Tem uma janela (compilada com `--features gui`) que abre um programa G-code, desenha a sua trajetória em 2D, percorre os movimentos passo a passo com uma tabela de linhas e mostra os alertas e avisos, mas a janela ainda não foi vista num ecrã; não foi experimentado numa máquina e não foi verificado com uma coleção de ficheiros reais.
 
 ---
 
@@ -30,7 +30,7 @@
 |---|---|
 | Versão | `0.0.6` |
 | Maturidade | Funcional |
-| Testes | 126 |
+| Testes | 142 |
 | Tecnologias | Rust |
 | Em hardware real | Não experimentado: nada disto correu numa máquina |
 
@@ -46,7 +46,7 @@ Cada linha é uma parte deste repositório e a luz diz até onde chega hoje. É 
 |---|---|---|
 | Núcleo | 🟡 | calcula o tempo de um programa G-code e encontra movimentos rápidos para o material, movimentos fora da mesa, cortes com o fuso parado e cabeçotes sobre grampos; testado num computador com entradas normais e danificadas, não com uma coleção de ficheiros reais. |
 | Linha de comandos | 🟡 | `eh3d-camdebug` executa as mesmas funções da biblioteca e imprime o resultado; cada erro volta como mensagem e código de saída diferente de zero. |
-| Testes | 🟡 | 126 testes passam (`cargo test`), com casos normais, casos-limite e entradas danificadas. Incluem uma simulação com semente fixa de uma máquina que executa o programa e é confrontada com o depurador, com falhas injetadas e recuperação. |
+| Testes | 🟡 | 142 testes passam (`cargo test`), com casos normais, casos-limite e entradas danificadas. Incluem uma simulação com semente fixa de uma máquina que executa o programa e é confrontada com o depurador, com falhas injetadas e recuperação. |
 | Segurança | 🟡 | Rust seguro e simples (`forbid(unsafe_code)`): nada entra em pânico com os ficheiros recebidos e um valor mau é um erro com o seu motivo; sem revisão independente. |
 | Janela | 🟠 | Escrita (egui, `--features gui`): abrir ou largar um programa, ver a sua trajetória em 2D, percorrer os movimentos passo a passo ou reproduzi-los, uma tabela de movimentos, os alertas e avisos, as definições da máquina e os limites; a sua lógica está testada, mas ainda não foi compilada nem vista num ecrã. |
 | Hardware real | 🔴 | Não experimentado: nada disto foi executado numa máquina. |
@@ -80,6 +80,7 @@ Como as partes deste repositório se encaixam: quem o usa, o que contém e de qu
 * **Sem adivinhar:** um valor sem sentido é um erro que diz qual e porquê, nunca um resultado que apenas parece certo.
 * **Sem código unsafe:** `#![forbid(unsafe_code)]` na biblioteca e no programa.
 * **Um avanço em falta diz-se uma vez e lê-se o modo laser:** cada movimento sem avanço dá uma só constatação (`--ignore feed-missing` silencia-a) e `--laser` lê `M3` ou `M4` com `S0` como laser desligado.
+* **Um limite de avanço de penetração, como termina o programa, um resumo e `--json`:** `--max-plunge MM_MIN` avisa de uma penetração (um movimento de corte que desce pelo menos tanto quanto avança) mais rápida do que o limite, `--end-z Z` avisa quando o programa termina com a ferramenta abaixo de Z (no seu último movimento) e `--require-end` avisa quando não termina com `M2` ou `M30`; nenhuma delas é verificada se não for pedida. `check` imprime ainda a extensão de tudo o que se moveu, quantos movimentos rápidos, cortes retos e arcos existem, as ferramentas que o programa seleciona e o intervalo dos seus avanços de corte, e `check --json` imprime tudo isso, os tempos e cada deteção como um único objeto JSON para outros programas, com o mesmo código de saída. A janela ainda não aceita estes três limites. Testado apenas num computador.
 
 ## 🔒 Segurança e proteção
 
@@ -99,8 +100,8 @@ A biblioteca é `eh3d_cam_debugger` (`use eh3d_cam_debugger::...`); a linha de c
 eh3d-camdebug check FILE.nc [options]     the time, the findings; exit code 1 when there is an alert, 2 when there are only warnings, 64 for a wrong option
 eh3d-camdebug steps FILE.nc [options]     every move with its line, length and time
 eh3d-camdebug [gui] [FILE.nc]             the window (a build with --features gui); with no arguments it opens
-options: --accel MM_S2 (500)  --rapid MM_MIN (3000)  --feed MM_MIN (300)  --dialect grbl|marlin|planetcnc  --table WIDTH,DEPTH  --surface Z (0)  --min-z Z  --max-feed MM_MIN
-         --laser  --clamp X0,Y0,X1,Y1,HEIGHT  --strict  --ignore CODE[,CODE]  --max-bytes N
+options: --accel MM_S2 (500)  --rapid MM_MIN (3000)  --feed MM_MIN (300)  --dialect grbl|marlin|planetcnc  --table WIDTH,DEPTH  --surface Z (0)  --min-z Z  --max-feed MM_MIN  --max-plunge MM_MIN  --end-z Z
+         --laser  --clamp X0,Y0,X1,Y1,HEIGHT  --strict  --ignore CODE[,CODE]  --max-bytes N  --require-end  --json
 ```
 
 ## ⚙️ Configuração
@@ -123,7 +124,7 @@ Para tirar uma captura da janela sem a abrir à mão, execute-o com `--shot FICH
 
 ## 🧪 Testes
 
-O conjunto tem 126 testes (`cargo test`, executados em Windows e Linux no CI). Verificam os casos normais, os casos-limite e as entradas danificadas: ficheiros vazios, lixo e ficheiros cortados nunca provocam pânico. O CI executa ainda `cargo fmt --check`, `cargo clippy` com avisos como erros e `python -I tools/ci_validate.py`.
+O conjunto tem 142 testes (`cargo test`, executados em Windows e Linux no CI). Verificam os casos normais, os casos-limite e as entradas danificadas: ficheiros vazios, lixo e ficheiros cortados nunca provocam pânico. O CI executa ainda `cargo fmt --check`, `cargo clippy` com avisos como erros e `python -I tools/ci_validate.py`.
 
 ## 🏗️ Compilação e publicação
 

@@ -415,6 +415,7 @@ impl Window {
             max_feed_mm_min: self.optional(Key::MaxFeed)?,
             clamps,
             ignore_codes,
+            ..Limits::default()
         })
     }
 
