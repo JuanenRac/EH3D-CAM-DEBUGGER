@@ -4,6 +4,13 @@ All notable changes to this project are documented here.
 
 ## [Unreleased]
 
+- **A server mode over the client of the suite:** `--config FILE` reads the keys `server_address`, `server_token`, `server_machine`, `server_timeout_s` (1 to 120, 15 by default), `server_retries` (0 to 5, 2 by default), `server_mdns` (`off` by default) and `server_max_answer_mib` (1 to 256, 8 by default) with `eh3d-serverclient` of EH3D-COMMON and leaves the other lines of the file alone; a value out of its range or a space in the address is a wrong use (64) that says its line; the mode is off until `server_address` is set and the local work never depends on it.
+- **`eh3d-camdebug server status`:** shows the link (the token as `***`) and what the server answers at `/health`, with the refusals and the failures of the network told by their code in the language of the system (taken from `LC_ALL`, `LC_MESSAGES` or `LANG`).
+- **`check --to-server` keeps the report on the server:** the JSON report of the check is kept on the EH3D server as the artifact `PROGRAM.report.json`, with the program, the dialect and the number of alerts and warnings as its parameters, whether the text or `--json` is printed; the exit code of the check does not change, the option is a wrong use (64) before any work when `--config` has no `server_address` or `server_token`, and a refusal of the server is told after the report was printed.
+- **`steps --to-server` keeps the list of moves:** the lines of `steps` are kept as the artifact `PROGRAM.steps.txt` (plain text) with the number of moves as a parameter.
+- **The artifact says what it is and how it was made:** its media type is JSON for the report and plain text for the moves, and its parameters carry the command, the program, the dialect and the counts.
+- **The CI takes `EH3D-COMMON` at `v0.2.5`:** the sibling that is checked out is the release that has the client of the server, and the manifest lists `EH3D-COMMON` in `depends_on`.
+
 ## [0.0.7] - Checks of plunge feed and end height, numbers of the program and JSON output
 
 - **A limit for the feed of a plunge:** `--max-plunge MM_MIN` warns, with its line, depth and feed, of a plunge (a cutting move that goes down at least as far as it goes along in the plane, so a ramp at less than 45 degrees is not one) whose feed is above the limit; a plunge with no feed is left to the check of the missing feed, and nothing is checked unless the option is given.

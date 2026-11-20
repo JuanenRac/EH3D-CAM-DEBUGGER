@@ -107,6 +107,13 @@ jobs:
           persist-credentials: false
           repository: JuanenRac/EH3D-CORE-LIBS
           path: EH3D-CORE-LIBS
+      - name: Check out the sibling EH3D-COMMON (a path dependency)
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          persist-credentials: false
+          repository: JuanenRac/EH3D-COMMON
+          ref: v0.2.5
+          path: EH3D-COMMON
       - name: Linux libraries of the window
         if: runner.os == 'Linux'
         run: sudo apt-get update && sudo apt-get install -y libxkbcommon-dev libwayland-dev libx11-dev libxcursor-dev libxrandr-dev libxi-dev libgl1-mesa-dev

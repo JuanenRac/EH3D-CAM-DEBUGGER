@@ -5,11 +5,13 @@
 use eh3d_cam_debugger::checks::{
     check, check_json, has_alerts, strict, summary, Clamp, Level, Limits,
 };
+use eh3d_cam_debugger::server;
 use eh3d_cam_debugger::timeline::{dwell_s, format_time, timeline, Machine};
 use eh3d_parser_gcode::{
     codes, interpret_with, parse_bytes_with, read_file_limited, Dialect, InputError, InputLimits,
     InterpretOptions, ReadError,
 };
+use eh3d_serverclient::Settings as LinkSettings;
 use std::env;
 use std::process::ExitCode;
 
@@ -17,6 +19,7 @@ const HELP: &str = "eh3d-camdebug: checks a G-code program before it reaches a m
 
   eh3d-camdebug check FILE.nc [options]     the time, the findings; exit code 1 when there is an alert, 2 when there are only warnings, 64 for a wrong option
   eh3d-camdebug steps FILE.nc [options]     every move with its line, length and time
+  eh3d-camdebug server [status] [--config FILE]   the link to the EH3D server (server_address, server_token, server_machine, server_timeout_s, server_retries, server_mdns and server_max_answer_mib of the file) and what the server answers
   eh3d-camdebug [gui] [FILE.nc]             the window (a build with --features gui): with no arguments, with a program or with gui it opens; the commands above never open it
   eh3d-camdebug gui [FILE...] --shot OUT.png [--size WxH] [--theme forge|dark|light] [--wait N] [--lang CODE] [--replace]   a picture of the window (a build with --features gui)
 
@@ -27,6 +30,7 @@ Options: --accel MM_S2 (500)  --rapid MM_MIN (3000)  --feed MM_MIN (300, used wh
          --strict (every warning is an alert too: exit code 1 for a cut with the spindle off, for one)
          --json (check prints one JSON object, with the findings, instead of the text; the exit code is the same)
          --ignore CODE[,CODE] (leave out the notices of the reader with those codes, for example line-too-long)  --max-bytes N (the largest file, 268435456 by default)
+         --config FILE (the keys of the link to the EH3D server; the other lines of the file are left alone)  --to-server (keep the JSON report of check, or the text of steps, on the EH3D server as an artifact; needs --config with server_address and server_token and is refused before any work when they are missing)
 The time is an upper bound: every move is counted from rest to rest.";
 
 fn nums(text: &str, n: usize, what: &str) -> Result<Vec<f64>, String> {
@@ -49,6 +53,10 @@ struct Options {
     laser: bool,
     json: bool,
     max_bytes: usize,
+    /// The file with the keys of the link to the EH3D server (`--config FILE`).
+    config: Option<String>,
+    /// Keeps the report on the EH3D server as an artifact (`--to-server`).
+    to_server: bool,
 }
 
 /// The codes of an `--ignore` value, each one checked against the codes of the reader: a misspelt code would ignore nothing.
@@ -69,6 +77,8 @@ fn parse_options(args: &[String]) -> Result<Options, String> {
     let mut laser = false;
     let mut json = false;
     let mut max_bytes = InputLimits::default().max_bytes;
+    let mut config = None;
+    let mut to_server = false;
     let mut i = 0;
     while i < args.len() {
         if args[i] == "--strict" {
@@ -88,6 +98,11 @@ fn parse_options(args: &[String]) -> Result<Options, String> {
         }
         if args[i] == "--laser" {
             laser = true;
+            i += 1;
+            continue;
+        }
+        if args[i] == "--to-server" {
+            to_server = true;
             i += 1;
             continue;
         }
@@ -113,6 +128,7 @@ fn parse_options(args: &[String]) -> Result<Options, String> {
             "--end-z" => l.end_z = Some(nums(&value()?, 1, "--end-z")?[0]),
             "--ignore" => l.ignore_codes.extend(ignored_codes(&value()?)?),
             "--max-bytes" => max_bytes = nums(&value()?, 1, "--max-bytes")?[0] as usize,
+            "--config" => config = Some(value()?),
             "--table" => {
                 let v = nums(&value()?, 2, "--table")?;
                 l.table = Some((v[0], v[1]));
@@ -152,6 +168,8 @@ fn parse_options(args: &[String]) -> Result<Options, String> {
         laser,
         json,
         max_bytes,
+        config,
+        to_server,
     })
 }
 
@@ -206,6 +224,99 @@ impl From<String> for Fail {
     }
 }
 
+/// The link to the EH3D server from the file of `--config`: the keys of the link, checked with their ranges; the other lines of the file are left alone.
+fn link_from(config: Option<&str>) -> Result<LinkSettings, String> {
+    match config {
+        Some(path) => server::settings_from_file(path),
+        None => Ok(LinkSettings::default()),
+    }
+}
+
+/// `--to-server` needs a server: the link of `--config`, with an address and a token.
+fn link_for_upload(config: Option<&str>) -> Result<LinkSettings, String> {
+    let path =
+        config.ok_or("--to-server needs --config FILE with server_address and server_token")?;
+    let settings = server::settings_from_file(path)?;
+    server::require(&settings)?;
+    Ok(settings)
+}
+
+/// `server [status] [--config FILE]`: the link, with the token as `***`, and what the server answers.
+fn server_command(mut args: Vec<String>) -> Result<u8, Fail> {
+    let config = match args.iter().position(|a| a == "--config") {
+        Some(i) => {
+            let value = args
+                .get(i + 1)
+                .cloned()
+                .ok_or_else(|| Fail::Usage("--config needs a value".into()))?;
+            args.drain(i..=i + 1);
+            Some(value)
+        }
+        None => None,
+    };
+    match args.as_slice() {
+        [] => {}
+        [word] if word == "status" => {}
+        [word] => {
+            return Err(Fail::Usage(format!(
+                "server {word}: unknown (use: server status)"
+            )))
+        }
+        _ => return Err(Fail::Usage("server takes one word: status".into())),
+    }
+    let settings = link_from(config.as_deref()).map_err(Fail::Usage)?;
+    print!("{}", server::status_report(settings)?);
+    Ok(0)
+}
+
+/// Keeps a file on the server and says so; the report was already printed, so a refusal is told as such.
+fn keep(
+    link: &LinkSettings,
+    name: &str,
+    format: &str,
+    data: &[u8],
+    params: &[(&str, &str)],
+) -> Result<(), String> {
+    let line = server::keep(link.clone(), name, format, data, params)
+        .map_err(|e| format!("{name}: not kept on the server: {e}"))?;
+    println!("{line}");
+    Ok(())
+}
+
+/// Keeps the JSON report of a check on the server, with the number of alerts and warnings and the dialect as its parameters.
+fn keep_report(
+    link: &LinkSettings,
+    file: &str,
+    dialect: &str,
+    report: &str,
+    findings: &[eh3d_cam_debugger::checks::Finding],
+) -> Result<(), String> {
+    let alerts = findings.iter().filter(|f| f.level == Level::Alert).count();
+    let (alerts_text, warnings_text) = (alerts.to_string(), (findings.len() - alerts).to_string());
+    keep(
+        link,
+        &format!("{}.report.json", file_name_of(file)),
+        "application/json",
+        report.as_bytes(),
+        &[
+            ("command", "check"),
+            ("program", file_name_of(file).as_str()),
+            ("dialect", dialect),
+            ("alerts", alerts_text.as_str()),
+            ("warnings", warnings_text.as_str()),
+        ],
+    )
+}
+
+/// The last part of a path, as text.
+fn file_name_of(path: &str) -> String {
+    std::path::Path::new(path)
+        .file_name()
+        .and_then(|n| n.to_str())
+        .unwrap_or("program")
+        .to_string()
+}
+
 /// The exit code of a run: 0 nothing to say, 1 an alert, 2 only warnings (64 and 1 for the runs that failed are in `main`).
 fn run(mut args: Vec<String>) -> Result<u8, Fail> {
     if args.is_empty() || matches!(args[0].as_str(), "help" | "--help" | "-h") {
@@ -218,6 +329,9 @@ fn run(mut args: Vec<String>) -> Result<u8, Fail> {
         return Err(Fail::Failed(
             "this build has no window: build it with --features gui".into(),
         ));
+    }
+    if cmd == "server" {
+        return server_command(args);
     }
     // an unknown command is refused before any file is read
     if !matches!(cmd.as_str(), "check" | "steps") {
@@ -241,7 +355,17 @@ fn run(mut args: Vec<String>) -> Result<u8, Fail> {
         laser,
         json,
         max_bytes,
+        config,
+        to_server,
     } = parse_options(&args).map_err(Fail::Usage)?;
+    // the keys of the link are checked whenever a file names them, and the server is there before any work is done
+    let link = if to_server {
+        Some(link_for_upload(config.as_deref()).map_err(Fail::Usage)?)
+    } else {
+        link_from(config.as_deref()).map_err(Fail::Usage)?;
+        None
+    };
+    let dialect_name = format!("{dialect:?}").to_ascii_lowercase();
     let bytes = read_file_limited(std::path::Path::new(&file), &InputLimits { max_bytes })
         .map_err(|e| match e {
             ReadError::TooLarge(InputError::TooLarge { size, limit }) => {
@@ -259,17 +383,18 @@ fn run(mut args: Vec<String>) -> Result<u8, Fail> {
             if strict_mode {
                 strict(&mut findings);
             }
-            println!(
-                "{}",
-                check_json(
-                    &trace,
-                    tl.total_s,
-                    tl.cutting_s,
-                    tl.rapid_s,
-                    dwell_s(&program),
-                    &findings
-                )
+            let report = check_json(
+                &trace,
+                tl.total_s,
+                tl.cutting_s,
+                tl.rapid_s,
+                dwell_s(&program),
+                &findings,
             );
+            println!("{report}");
+            if let Some(link) = &link {
+                keep_report(link, &file, &dialect_name, &report, &findings)?;
+            }
             Ok(if has_alerts(&findings) {
                 1
             } else if findings.is_empty() {
@@ -338,6 +463,17 @@ fn run(mut args: Vec<String>) -> Result<u8, Fail> {
             if findings.is_empty() {
                 println!("no findings");
             }
+            if let Some(link) = &link {
+                let report = check_json(
+                    &trace,
+                    tl.total_s,
+                    tl.cutting_s,
+                    tl.rapid_s,
+                    dwell_s(&program),
+                    &findings,
+                );
+                keep_report(link, &file, &dialect_name, &report, &findings)?;
+            }
             Ok(if has_alerts(&findings) {
                 1
             } else if findings.is_empty() {
@@ -347,15 +483,32 @@ fn run(mut args: Vec<String>) -> Result<u8, Fail> {
             })
         }
         "steps" => {
+            let mut listing = String::new();
             for t in &tl.steps {
-                println!(
-                    "line {:>4}  {:<5} {:>9.3} mm  {:>8.2} s  at {:>9}",
+                listing.push_str(&format!(
+                    "line {:>4}  {:<5} {:>9.3} mm  {:>8.2} s  at {:>9}\n",
                     t.line,
                     if t.rapid { "rapid" } else { "cut" },
                     t.length_mm,
                     t.time_s,
                     format_time(t.start_s)
-                );
+                ));
+            }
+            print!("{listing}");
+            if let Some(link) = &link {
+                let steps = tl.steps.len().to_string();
+                keep(
+                    link,
+                    &format!("{}.steps.txt", file_name_of(&file)),
+                    "text/plain",
+                    listing.as_bytes(),
+                    &[
+                        ("command", "steps"),
+                        ("program", file_name_of(&file).as_str()),
+                        ("dialect", dialect_name.as_str()),
+                        ("steps", steps.as_str()),
+                    ],
+                )?;
             }
             Ok(0)
         }

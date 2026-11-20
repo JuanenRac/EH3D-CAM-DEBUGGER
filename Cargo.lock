@@ -7,6 +7,7 @@ name = "eh3d-cam-debugger"
 version = "0.0.7"
 dependencies = [
  "eh3d-parser-gcode",
+ "eh3d-serverclient",
 ]
 
 [[package]]
@@ -19,3 +20,7 @@ version = "0.0.7"
 dependencies = [
  "eh3d-parser-common",
 ]
+
+[[package]]
+name = "eh3d-serverclient"
+version = "0.0.1"
