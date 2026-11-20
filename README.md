@@ -73,6 +73,14 @@ EH3D-CAM-DEBUGGER is one program of the EH3D Fabrication Suite. It works as a li
 
 How the parts of this repository fit together: who uses it, what it holds and what it depends on. The picture is drawn from `docs/architecture.json` and checked against the code.
 
+## 🖼️ Screenshots
+
+<p align="center">
+  <img src="images/screens/cam-debugger-01-window.png" alt="The window with the example program" width="100%">
+</p>
+
+<p align="center"><em>The window with the example program: the path of the moves coloured by kind, the alert marked on the path, the step and the list of the moves at the right, and the findings at the left.</em></p>
+
 ## ✨ Features
 
 * **A library and a command line:** every command of `eh3d-camdebug` is a function of the library, so another program of the suite can call it without starting a process.

@@ -4,6 +4,7 @@ All notable changes to this project are documented here.
 
 ## [Unreleased]
 
+- **A picture of the window in the README:** the window with the example program, written by the picture mode (`--shot`) of the published program, with its caption in the eight languages.
 ## [0.0.8] - Send reports to the EH3D server and a server status command
 
 - **A server mode over the client of the suite:** `--config FILE` reads the keys `server_address`, `server_token`, `server_machine`, `server_timeout_s` (1 to 120, 15 by default), `server_retries` (0 to 5, 2 by default), `server_mdns` (`off` by default) and `server_max_answer_mib` (1 to 256, 8 by default) with `eh3d-serverclient` of EH3D-COMMON and leaves the other lines of the file alone; a value out of its range or a space in the address is a wrong use (64) that says its line; the mode is off until `server_address` is set and the local work never depends on it.

@@ -73,6 +73,14 @@ EH3D-CAM-DEBUGGER 是 EH3D Fabrication Suite 的一个程序。它以库和命�
 
 本仓库各部分如何配合：谁使用它、它包含什么、它依赖什么。图由 `docs/architecture.json` 绘制并与代码核对。
 
+## 🖼️ 屏幕截图
+
+<p align="center">
+  <img src="images/screens/cam-debugger-01-window.png" alt="载入示例程序的窗口" width="100%">
+</p>
+
+<p align="center"><em>载入示例程序的窗口：按类型着色的运动路径，路径上标出的警报，右侧是当前步骤和运动列表，左侧是检查结果。</em></p>
+
 ## ✨ 功能
 
 * **库加命令行：** `eh3d-camdebug` 的每个命令都是库中的函数，套件中的其他程序无需启动进程即可调用。
