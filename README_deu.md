@@ -17,7 +17,7 @@
 
 ---
 
-**Ehrlichkeitscheck - was heute wirklich läuft:** eine Rust-Bibliothek und ein Kommandozeilenprogramm (`eh3d-camdebug`) mit 169 Tests, die auf einem Computer laufen: berechnet die Zeit eines G-Code-Programms und findet Eilgänge ins Material, Bewegungen außerhalb des Tisches, Schnitte bei stehender Spindel und Köpfe über Spannern. Es hat ein Fenster (Build mit `--features gui`), das ein G-Code-Programm öffnet, seine Bahn in 2D zeichnet, die Bewegungen Schritt für Schritt mit einer Zeilentabelle durchgeht und die Alarme und Warnungen zeigt, aber das Fenster wurde noch nicht auf einem Bildschirm angesehen; wurde an keiner Maschine ausprobiert und nicht an einer Sammlung echter Dateien geprüft.
+**Ehrlichkeitscheck - was heute wirklich läuft:** eine Rust-Bibliothek und ein Kommandozeilenprogramm (`eh3d-camdebug`) mit 236 Tests, die auf einem Computer laufen: berechnet die Zeit eines G-Code-Programms und findet Eilgänge ins Material, Bewegungen außerhalb des Tisches, Schnitte bei stehender Spindel und Köpfe über Spannern. Es hat ein Fenster (Build mit `--features gui`), das ein G-Code-Programm öffnet, seine Bahn in 2D zeichnet, die Bewegungen Schritt für Schritt mit einer Zeilentabelle durchgeht und die Alarme und Warnungen zeigt, aber das Fenster wurde noch nicht auf einem Bildschirm angesehen; wurde an keiner Maschine ausprobiert und nicht an einer Sammlung echter Dateien geprüft.
 
 ---
 
@@ -30,7 +30,7 @@
 |---|---|
 | Version | `0.0.8` |
 | Reifegrad | Funktionsfähig |
-| Tests | 169 |
+| Tests | 236 |
 | Technologie-Stack | Rust |
 | Auf echter Hardware | Nicht erprobt: nichts davon lief an einer Maschine |
 
@@ -46,7 +46,7 @@ Jede Zeile ist ein Teil dieses Repositorys, und die Ampel sagt, wie weit er heut
 |---|---|---|
 | Kern | 🟡 | berechnet die Zeit eines G-Code-Programms und findet Eilgänge ins Material, Bewegungen außerhalb des Tisches, Schnitte bei stehender Spindel und Köpfe über Spannern; am Computer mit normalen und beschädigten Eingaben getestet, nicht mit einer Sammlung echter Dateien. |
 | Kommandozeile | 🟡 | `eh3d-camdebug` führt dieselben Funktionen wie die Bibliothek aus und gibt das Ergebnis aus; jeder Fehler kommt als Meldung mit einem Exit-Code ungleich null zurück. |
-| Tests | 🟡 | 169 Tests bestehen (`cargo test`), mit Normalfällen, Grenzfällen und beschädigten Eingaben. Dazu gehört eine Simulation mit festem Seed für eine Maschine, die das Programm ausführt und gegen den Debugger gehalten wird, mit eingespeisten Fehlern und Wiederherstellung. |
+| Tests | 🟡 | 236 Tests bestehen (`cargo test`), mit Normalfällen, Grenzfällen und beschädigten Eingaben. Dazu gehört eine Simulation mit festem Seed für eine Maschine, die das Programm ausführt und gegen den Debugger gehalten wird, mit eingespeisten Fehlern und Wiederherstellung. |
 | Sicherheit | 🟡 | Reines sicheres Rust (`forbid(unsafe_code)`): nichts gerät bei den übergebenen Dateien in Panik und ein schlechter Wert ist ein Fehler mit Begründung; keine unabhängige Prüfung. |
 | Fenster | 🟠 | Geschrieben (egui, `--features gui`): Programm öffnen oder hineinziehen, seine Bahn in 2D sehen, die Bewegungen Schritt für Schritt durchgehen oder abspielen, eine Bewegungstabelle, die Alarme und Warnungen, die Einstellungen der Maschine und die Grenzen; die Logik ist getestet, aber noch nicht gebaut oder auf einem Bildschirm angesehen. |
 | Echte Hardware | 🔴 | Nicht erprobt: nichts davon wurde an einer Maschine ausgeführt. |
@@ -134,7 +134,7 @@ Um ein Bild des Fensters aufzunehmen, ohne es von Hand zu öffnen, starten Sie e
 
 ## 🧪 Tests
 
-Die Suite hat 169 Tests (`cargo test`, in der CI unter Windows und Linux). Sie prüfen Normalfälle, Grenzfälle und beschädigte Eingaben: leere Dateien, Datenmüll und abgeschnittene Dateien lösen nie eine Panik aus. Die CI führt außerdem `cargo fmt --check`, `cargo clippy` mit Warnungen als Fehlern und `python -I tools/ci_validate.py` aus.
+Die Suite hat 236 Tests (`cargo test`, in der CI unter Windows und Linux). Sie prüfen Normalfälle, Grenzfälle und beschädigte Eingaben: leere Dateien, Datenmüll und abgeschnittene Dateien lösen nie eine Panik aus. Die CI führt außerdem `cargo fmt --check`, `cargo clippy` mit Warnungen als Fehlern und `python -I tools/ci_validate.py` aus.
 
 ## 🏗️ Build und Veröffentlichung
 

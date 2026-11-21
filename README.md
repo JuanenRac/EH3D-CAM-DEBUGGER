@@ -17,7 +17,7 @@
 
 ---
 
-**Honesty check - what actually runs today:** a Rust library and a command line program (`eh3d-camdebug`) with 169 tests that run on a computer: works out the time of a G-code program and finds rapid moves into the material, moves outside the table, cuts with the spindle off and heads over clamps. It has a window (built with `--features gui`) that opens a G-code program, draws its path in 2D, goes through the moves step by step with a table of the lines and shows the alerts and warnings, but the window has not been looked at on a screen yet; it has not been tried on a machine and it has not been checked against a collection of real files.
+**Honesty check - what actually runs today:** a Rust library and a command line program (`eh3d-camdebug`) with 236 tests that run on a computer: works out the time of a G-code program and finds rapid moves into the material, moves outside the table, cuts with the spindle off and heads over clamps. It has a window (built with `--features gui`) that opens a G-code program, draws its path in 2D, goes through the moves step by step with a table of the lines and shows the alerts and warnings, but the window has not been looked at on a screen yet; it has not been tried on a machine and it has not been checked against a collection of real files.
 
 ---
 
@@ -30,7 +30,7 @@
 |---|---|
 | Version | `0.0.8` |
 | Maturity | Functional |
-| Tests | 169 |
+| Tests | 236 |
 | Stack | Rust |
 | On real hardware | Not tried: nothing here has run on a machine |
 
@@ -46,7 +46,7 @@ Each line is one part of this repository and the light says how far it is today.
 |---|---|---|
 | Core | 🟡 | works out the time of a G-code program and finds rapid moves into the material, moves outside the table, cuts with the spindle off and heads over clamps; tested on a computer with normal and damaged input, not with a collection of real files. |
 | Command line | 🟡 | `eh3d-camdebug` runs the same functions as the library and prints the result; every error comes back as a message and a non-zero exit code. |
-| Tests | 🟡 | 169 tests pass (`cargo test`), with normal cases, edge cases and damaged input. They include a seeded simulation of a machine that runs the program and is held against the debugger with injected faults and recovery. |
+| Tests | 🟡 | 236 tests pass (`cargo test`), with normal cases, edge cases and damaged input. They include a seeded simulation of a machine that runs the program and is held against the debugger with injected faults and recovery. |
 | Security | 🟡 | Plain safe Rust (`forbid(unsafe_code)`): nothing panics on the files it is given and a bad value is an error with its reason; no independent review. |
 | Window | 🟠 | Written (egui, `--features gui`): open or drop a program, see its path in 2D, go through the moves step by step or play them, a table of the moves, the alerts and warnings, the settings of the machine and the limits; its logic is tested, but it has not been built or looked at on a screen yet. |
 | Real hardware | 🔴 | Not tried: nothing here has been run on a machine. |
@@ -134,7 +134,7 @@ To take a picture of the window without opening it by hand, run it with `--shot 
 
 ## 🧪 Testing
 
-The suite has 169 tests (`cargo test`, run on Windows and Linux in the CI). They check the normal cases, the edge cases and damaged input: empty files, garbage and cut files never panic. The CI also runs `cargo fmt --check`, `cargo clippy` with warnings as errors and `python -I tools/ci_validate.py`.
+The suite has 236 tests (`cargo test`, run on Windows and Linux in the CI). They check the normal cases, the edge cases and damaged input: empty files, garbage and cut files never panic. The CI also runs `cargo fmt --check`, `cargo clippy` with warnings as errors and `python -I tools/ci_validate.py`.
 
 ## 🏗️ Build & Release
 
