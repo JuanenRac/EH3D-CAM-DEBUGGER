@@ -426,6 +426,37 @@ fn an_arc_that_bulges_out_of_the_table_is_found_although_both_ends_are_inside() 
     assert!(check(&inside, &limits).is_empty());
 }
 
+#[test]
+fn a_large_arc_that_leaves_the_table_by_less_than_a_sampling_step_is_found() {
+    // a circle of radius 100.05 about (150, 150) reaches 0.05 mm past each side of the box from 50 to 250; it starts half a step of 1/64 of a turn after the right
+    // side, so no point sampled along it falls there
+    let a0 = std::f64::consts::PI / 64.0;
+    let start = (150.0 + 100.05 * a0.cos(), 150.0 + 100.05 * a0.sin(), 1.0);
+    for motion in [
+        Motion::ArcCcw {
+            center: (150.0, 150.0),
+        },
+        Motion::ArcCw {
+            center: (150.0, 150.0),
+        },
+    ] {
+        let round = trace_of(vec![seg(1, motion, start, start, 100.0, true)]);
+        let limits = Limits {
+            table: Some((250.0, 400.0)),
+            ..Limits::default()
+        };
+        assert_eq!(
+            messages(&check(&round, &limits)),
+            vec!["(250.050, 150.000) is outside the table of 250 x 400 mm"]
+        );
+        let wide = Limits {
+            table: Some((250.05, 250.05)),
+            ..Limits::default()
+        };
+        assert!(check(&round, &wide).is_empty());
+    }
+}
+
 fn clamp() -> Clamp {
     Clamp {
         x0: 10.0,
