@@ -4,6 +4,8 @@ All notable changes to this project are documented here.
 
 ## [Unreleased]
 
+## [0.0.9] - Warns of large arcs that leave the table, and more tests
+
 - Fix the check of the table for arcs (safety): a large arc that leaves the table by less than the distance between the points sampled along it (up to about 0.1 mm on a radius of 100 mm) was not reported; the farthest points of its circle are now checked too.
 - **Behaviour tests at the exact edge:** `tests/behaviour.rs` adds 67 deterministic tests without changing the behaviour, on traces built by hand so that every expected number is worked out: each rule of the checks on both sides of its limit (rapid moves into the material, cuts with the spindle off, feeds and plunges, lowest Z, the table with its tolerance, arcs that bulge out of the table, clamps and their exact height, the end of the program), the escaped text and the exact shape of the JSON report, the length of arcs and helices, the times of the steps, the zoom of the drawing, the base64 and the request of the server link, the arguments of the window and the eight languages.
 - **A picture of the window in the README:** the window with the example program, written by the picture mode (`--shot`) of the published program, with its caption in the eight languages.
