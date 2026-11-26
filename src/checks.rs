@@ -120,6 +120,28 @@ fn arc_of(s: &Segment) -> Option<((f64, f64), f64, f64, f64)> {
     Some((center, r, a0, a1))
 }
 
+/// The rightmost, highest, leftmost and lowest points of the circle that an arc passes: where it reaches farthest, which points sampled along it can miss. Empty for a
+/// straight move.
+fn arc_extremes(s: &Segment) -> Vec<(f64, f64)> {
+    use std::f64::consts::{FRAC_PI_2, TAU};
+    let Some((center, r, a0, a1)) = arc_of(s) else {
+        return Vec::new();
+    };
+    let sweep = a1 - a0;
+    (0..4)
+        .map(|k| f64::from(k) * FRAC_PI_2)
+        .filter(|angle| {
+            let gone = if sweep > 0.0 {
+                (angle - a0).rem_euclid(TAU)
+            } else {
+                (a0 - angle).rem_euclid(TAU)
+            };
+            gone <= sweep.abs()
+        })
+        .map(|angle| (center.0 + r * angle.cos(), center.1 + r * angle.sin()))
+        .collect()
+}
+
 /// The point of a move at `t` (0 at the start, 1 at the end): on the arc for G2 and G3, on the straight line for the rest.
 pub fn point_at(s: &Segment, t: f64) -> (f64, f64, f64) {
     let z = s.from.z + (s.to.z - s.from.z) * t;
@@ -245,18 +267,21 @@ pub fn check(trace: &Trace, limits: &Limits) -> Vec<Finding> {
             }
         }
         if let Some((w, d)) = limits.table {
-            // the ends, and for an arc the points along it: an arc can leave the table with both ends inside
+            // the ends, and for an arc the points along it and the farthest ones of its circle: an arc can leave the table with both ends inside
             let steps = if arc_of(s).is_some() { 64 } else { 1 };
-            for k in 0..=steps {
-                let (x, y, _) = point_at(s, k as f64 / steps as f64);
-                if x < -EPS || y < -EPS || x > w + EPS || y > d + EPS {
-                    out.push(Finding {
-                        line: s.line,
-                        level: Level::Alert,
-                        message: format!("({x:.3}, {y:.3}) is outside the table of {w} x {d} mm"),
-                    });
-                    break;
-                }
+            let outside = (0..=steps)
+                .map(|k| {
+                    let (x, y, _) = point_at(s, k as f64 / steps as f64);
+                    (x, y)
+                })
+                .chain(arc_extremes(s))
+                .find(|&(x, y)| x < -EPS || y < -EPS || x > w + EPS || y > d + EPS);
+            if let Some((x, y)) = outside {
+                out.push(Finding {
+                    line: s.line,
+                    level: Level::Alert,
+                    message: format!("({x:.3}, {y:.3}) is outside the table of {w} x {d} mm"),
+                });
             }
         }
         if !limits.clamps.is_empty() {
