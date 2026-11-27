@@ -2,7 +2,7 @@
 
 This register is the single source of the state of each capability: `STATUS.md` and the README files cite it and never state a state that it does not. A state is one of `planned`, `prototype`, `implemented` and `validated`. `validated` means that a person has run the capability on a real machine and the evidence of the manifest says `bench` or `field`; nothing here is validated, because nothing of this program has been compared with a real machine.
 
-The register has 32 requirements: 23 implemented, 4 prototype, 5 planned and 0 validated. By progress: 23 done, 4 partial, 1 pending and 4 blocked. High coverage is not proof of correctness, so each row says how it is checked: the test that names it, and what it shows.
+The register has 33 requirements: 24 implemented, 4 prototype, 5 planned and 0 validated. By progress: 24 done, 4 partial, 1 pending and 4 blocked. High coverage is not proof of correctness, so each row says how it is checked: the test that names it, and what it shows.
 
 ## How to read the register
 
@@ -71,3 +71,9 @@ The check is `tests/reqs.rs`: it reads this table, finds each test and fails whe
 | CDBG-030 | The clamps are taken from the project of the job. | planned | blocked | none | `planned:project_clamps::the_clamps_of_the_project_are_the_clamps_checked` | Needs the project format of the suite to say where the clamps are. |
 | CDBG-031 | A program is run on a real machine and the time and the findings are compared with what happened. | planned | blocked | none | `planned:real_machine::the_time_and_the_findings_match_a_real_run` | Needs a machine. |
 | CDBG-032 | The window is looked at on a screen and matches the picture the program takes of itself. | planned | blocked | none | `planned:window_screen::the_window_matches_the_reference_picture` | Needs a person at a screen. |
+
+## Dialects
+
+| ID | Requirement | State | Progress | Evidence | Test | Limits |
+|---|---|---|---|---|---|---|
+| CDBG-033 | A program for a Marlin printer read as GRBL names the dialect to choose, without changing the levels or the exit code. | implemented | done | host-test | `reading::a_program_for_a_printer_read_as_grbl_says_which_dialect_to_choose` | Recognised by an `E` word or the codes M104, M109, M140 and M190; the default dialect stays GRBL. |

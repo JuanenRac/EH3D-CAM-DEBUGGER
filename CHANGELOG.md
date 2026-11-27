@@ -4,6 +4,8 @@ All notable changes to this project are documented here.
 
 ## [Unreleased]
 
+- **Built against the tag v0.1.4 of EH3D-CORE-LIBS** (it was v0.1.1), also for the binaries of a release (they took its main branch): its G-code reader no longer calls clean what a controller would run differently, and `check` and the window show it with the code: a character that GRBL obeys at once inside a comment (`realtime-character`, a warning), `G93`/`G95` (`feed-mode-unsupported`), a word written twice or two codes of one group (`word-repeated`), a `$` command that is not a question, text after `M2`/`M30`, an unknown code with axis words and, with GRBL, spaces inside a number counted as the controller counts them.
+- **A program for a printer read as GRBL says which dialect to choose:** when it has an extruder word `E` or a temperature code, the first finding about it names `--dialect marlin` and the dialect list of the window. The default dialect is still GRBL and the exit code does not change. 2 new tests. Host-tested only.
 - **A spindle or a laser left on is told:** a program that ends with it on and no `M5`, `M2` or `M30` was reported as having nothing wrong; it is a warning for a spindle and an alert with `--laser`. With `--laser`, a wait (`G4`) or a pause (`M0`, `M1`) at constant power (`M3`) is an alert. Host-tested only.
 
 ## [0.0.9] - Warns of large arcs that leave the table, and more tests

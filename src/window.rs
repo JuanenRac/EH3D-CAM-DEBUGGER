@@ -3,7 +3,8 @@
 //! everything that can be decided is decided here, in code that is tested.
 
 use crate::checks::{
-    add_left_on, check, has_alerts, point_at, strict as make_strict, Clamp, Finding, Level, Limits,
+    add_dialect_hint, add_left_on, check, has_alerts, point_at, strict as make_strict, Clamp,
+    Finding, Level, Limits,
 };
 use crate::lang::{fill, Lang, Msg};
 use crate::timeline::{dwell_s, format_time, length, timeline, Machine, Timeline};
@@ -546,6 +547,7 @@ impl Window {
         let tl = timeline(&trace, &machine).map_err(Status::Failed)?;
         let mut findings = check(&trace, &limits);
         add_left_on(&mut findings, &parsed, self.laser);
+        add_dialect_hint(&mut findings, &parsed);
         if self.strict {
             make_strict(&mut findings);
         }

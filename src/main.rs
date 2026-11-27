@@ -3,7 +3,8 @@
 #![forbid(unsafe_code)]
 
 use eh3d_cam_debugger::checks::{
-    add_left_on, check, check_json, has_alerts, strict, summary, Clamp, Level, Limits,
+    add_dialect_hint, add_left_on, check, check_json, has_alerts, strict, summary, Clamp, Level,
+    Limits,
 };
 use eh3d_cam_debugger::server;
 use eh3d_cam_debugger::timeline::{dwell_s, format_time, timeline, Machine};
@@ -381,6 +382,7 @@ fn run(mut args: Vec<String>) -> Result<u8, Fail> {
         "check" if json => {
             let mut findings = check(&trace, &limits);
             add_left_on(&mut findings, &program, laser);
+            add_dialect_hint(&mut findings, &program);
             if strict_mode {
                 strict(&mut findings);
             }
@@ -447,6 +449,7 @@ fn run(mut args: Vec<String>) -> Result<u8, Fail> {
             }
             let mut findings = check(&trace, &limits);
             add_left_on(&mut findings, &program, laser);
+            add_dialect_hint(&mut findings, &program);
             if strict_mode {
                 strict(&mut findings);
             }
