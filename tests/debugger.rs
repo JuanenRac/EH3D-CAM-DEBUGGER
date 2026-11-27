@@ -764,7 +764,11 @@ fn a_program_with_non_ascii_comments_and_a_byte_order_mark_is_checked() {
         "utf8.nc",
         "\u{feff}(fabricación ñandú 日本語)\nG21 G90\nM3 S1000\nG1 X5 F100\nM2\n",
     );
+    // GRBL obeys a byte outside ASCII wherever it stands, so with its dialect the comment is a warning; for Marlin it is a comment
     let (c, o, e) = camdebug(&["check", f.to_str().unwrap()]);
+    assert_eq!(c, Some(2), "{o} {e}");
+    assert!(o.contains("[realtime-character]"), "{o}");
+    let (c, o, e) = camdebug(&["check", f.to_str().unwrap(), "--dialect", "marlin"]);
     assert_eq!(c, Some(0), "{o} {e}");
 }
 
