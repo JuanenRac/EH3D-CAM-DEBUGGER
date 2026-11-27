@@ -1,6 +1,6 @@
 //! What would hurt: each finding has the line of the program, how serious it is and what it is.
 
-use eh3d_parser_gcode::{codes, Motion, Segment, Severity, Trace};
+use eh3d_parser_gcode::{codes, Motion, Program, Segment, Severity, Trace};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Level {
@@ -329,6 +329,72 @@ pub fn check(trace: &Trace, limits: &Limits) -> Vec<Finding> {
     out.sort_by_key(|f| f.line);
     out.dedup_by(|a, b| a.line == b.line && a.message == b.message);
     out
+}
+
+/// Adds what the moves alone do not show: a spindle or a laser that is on where nothing moves. At the end of a program with no `M5`, `M2` or `M30` it stays on (an alert for a
+/// laser, a warning for a spindle). With `laser`, a wait (`G4`) or a pause (`M0`, `M1`) at constant power (`M3` with `S` above 0) burns one spot and is an alert.
+pub fn add_left_on(findings: &mut Vec<Finding>, program: &Program, laser: bool) {
+    // the spindle: `Some(true)` at constant power (M3), `Some(false)` with M4
+    let mut on: Option<bool> = None;
+    let mut speed = 0.0_f64;
+    let mut last = 0;
+    for block in &program.blocks {
+        last = block.line;
+        let has = |letter: char, value: f64| {
+            block
+                .words
+                .iter()
+                .any(|w| w.letter == letter && w.value == value)
+        };
+        if let Some(s) = block.get('S').filter(|s| *s >= 0.0) {
+            speed = s;
+        }
+        if has('M', 3.0) {
+            on = Some(true);
+        }
+        if has('M', 4.0) {
+            on = Some(false);
+        }
+        if has('M', 5.0) {
+            on = None;
+        }
+        if laser && on == Some(true) && speed > 0.0 {
+            let what = if has('G', 4.0) {
+                Some("waits (G4)")
+            } else if has('M', 0.0) || has('M', 1.0) {
+                Some("pauses (M0 or M1)")
+            } else {
+                None
+            };
+            if let Some(what) = what {
+                findings.push(Finding {
+                    line: block.line,
+                    level: Level::Alert,
+                    message: format!(
+                        "the program {what} with the laser on at constant power (M3): it burns one spot"
+                    ),
+                });
+            }
+        }
+        // the end of the program stops the spindle; what comes after is told by the reader
+        if has('M', 2.0) || has('M', 30.0) {
+            on = None;
+            break;
+        }
+    }
+    if on.is_some() && (!laser || speed > 0.0) {
+        let (level, tool) = if laser {
+            (Level::Alert, "laser")
+        } else {
+            (Level::Warning, "spindle")
+        };
+        findings.push(Finding {
+            line: last,
+            level,
+            message: format!("the program ends with the {tool} on: no M5, M2 or M30"),
+        });
+    }
+    findings.sort_by_key(|f| f.line);
 }
 
 pub fn has_alerts(findings: &[Finding]) -> bool {
