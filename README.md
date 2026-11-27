@@ -17,7 +17,7 @@
 
 ---
 
-**Honesty check - what actually runs today:** a Rust library and a command line program (`eh3d-camdebug`) with 241 tests that run on a computer: works out the time of a G-code program and finds rapid moves into the material, moves outside the table, cuts with the spindle off and heads over clamps. It has a window (built with `--features gui`) that opens a G-code program, draws its path in 2D, goes through the moves step by step with a table of the lines and shows the alerts and warnings, but the window has not been looked at on a screen yet; it has not been tried on a machine and it has not been checked against a collection of real files.
+**Honesty check - what actually runs today:** a Rust library and a command line program (`eh3d-camdebug`) with 244 tests that run on a computer: works out the time of a G-code program and finds rapid moves into the material, moves outside the table, cuts with the spindle off and heads over clamps. It has a window (built with `--features gui`) that opens a G-code program, draws its path in 2D, goes through the moves step by step with a table of the lines and shows the alerts and warnings, but the window has not been looked at on a screen yet; it has not been tried on a machine and it has not been checked against a collection of real files.
 
 ---
 
@@ -30,7 +30,7 @@
 |---|---|
 | Version | `0.1.0` |
 | Maturity | Functional |
-| Tests | 241 |
+| Tests | 244 |
 | Stack | Rust |
 | On real hardware | Not tried: nothing here has run on a machine |
 
@@ -46,7 +46,7 @@ Each line is one part of this repository and the light says how far it is today.
 |---|---|---|
 | Core | 🟡 | works out the time of a G-code program and finds rapid moves into the material, moves outside the table, cuts with the spindle off and heads over clamps; tested on a computer with normal and damaged input, not with a collection of real files. |
 | Command line | 🟡 | `eh3d-camdebug` runs the same functions as the library and prints the result; every error comes back as a message and a non-zero exit code. |
-| Tests | 🟡 | 241 tests pass (`cargo test`), with normal cases, edge cases and damaged input. They include a seeded simulation of a machine that runs the program and is held against the debugger with injected faults and recovery. |
+| Tests | 🟡 | 244 tests pass (`cargo test`), with normal cases, edge cases and damaged input. They include a seeded simulation of a machine that runs the program and is held against the debugger with injected faults and recovery. |
 | Security | 🟡 | Plain safe Rust (`forbid(unsafe_code)`): nothing panics on the files it is given and a bad value is an error with its reason; no independent review. |
 | Window | 🟠 | Written (egui, `--features gui`): open or drop a program, see its path in 2D, go through the moves step by step or play them, a table of the moves, the alerts and warnings, the settings of the machine and the limits; its logic is tested, but it has not been built or looked at on a screen yet. |
 | Real hardware | 🔴 | Not tried: nothing here has been run on a machine. |
@@ -59,7 +59,7 @@ Each line is one part of this repository and the light says how far it is today.
 * **A spindle or a laser left on:** a program that ends with it on and no `M5`, `M2` or `M30` is a warning (an alert with `--laser`); with `--laser`, a wait (`G4`) or a pause (`M0`, `M1`) at constant power (`M3`) is an alert.
 * **What the reader could not understand** (cutter compensation, canned cycles, a damaged line) comes up as an alert with its line, so a program that was misread is never reported as clean.
 * **Arcs, `--strict` and the codes that move the origin:** the table limits and the clamps are tested along the arc of a G2 or G3, not along its chord; `--strict` makes every warning an alert (exit code 1), for a flow that uses the exit code as the barrier before the machine; a program with G92, G53, G28, G30 or G10 is reported instead of passing as clean.
-* **Reading and notices by code:** the program is read from its bytes (`--max-bytes N` refuses a file over the limit, 256 MiB by default; text that is not UTF-8 is read as Latin-1 and reported with the code `input-not-utf8`); every finding of the reader shows its stable code, and `--ignore CODE[,CODE]` leaves out the notices of those codes. What a controller would read otherwise is not passed as clean: `realtime-character` (a comment with a character that GRBL obeys at once), `feed-mode-unsupported` (`G93`, `G95`) and `word-repeated` (a word twice or two codes of one group). A program for a Marlin printer read with the default GRBL dialect (an `E` word or a temperature code) names `--dialect marlin` in its first finding about it.
+* **Reading and notices by code:** the program is read from its bytes (`--max-bytes N` refuses a file over the limit, 256 MiB by default; text that is not UTF-8 is read as Latin-1 and reported with the code `input-not-utf8`); every finding of the reader shows its stable code, and `--ignore CODE[,CODE]` leaves out the notices of those codes. What a controller would read otherwise is not passed as clean: `realtime-character` (a comment with a character that GRBL obeys at once), `feed-mode-unsupported` (`G93`, `G95`) and `word-repeated` (a word twice or two codes of one group). A program for a Marlin printer read with the default GRBL dialect (an `E` word or a temperature code) names `--dialect marlin` in its first finding about it. With no dialect chosen, a program that is surely for a 3D printer (a temperature code with its value and a move with an `E` word, and no `M3`, `M4` or `M6`) is read as Marlin and that is said, in the output and in the window; `--dialect grbl` or the choice in the window always rules, and in doubt it is read as GRBL.
 
 ## 🧩 Role in EH3D
 
@@ -135,7 +135,7 @@ To take a picture of the window without opening it by hand, run it with `--shot 
 
 ## 🧪 Testing
 
-The suite has 241 tests (`cargo test`, run on Windows and Linux in the CI). They check the normal cases, the edge cases and damaged input: empty files, garbage and cut files never panic. The CI also runs `cargo fmt --check`, `cargo clippy` with warnings as errors and `python -I tools/ci_validate.py`.
+The suite has 244 tests (`cargo test`, run on Windows and Linux in the CI). They check the normal cases, the edge cases and damaged input: empty files, garbage and cut files never panic. The CI also runs `cargo fmt --check`, `cargo clippy` with warnings as errors and `python -I tools/ci_validate.py`.
 
 ## 🏗️ Build & Release
 

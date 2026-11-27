@@ -213,12 +213,17 @@ impl App {
             .show(ui, |ui| {
                 ui.label(Msg::Dialect.tr(lang));
                 let mut dialect = self.win.dialect;
-                let shown = dialect_label(dialect);
+                let shown = dialect_choice_label(dialect);
                 egui::ComboBox::from_id_salt("dialect")
                     .selected_text(shown.tr(lang))
                     .show_ui(ui, |ui| {
-                        for d in [Dialect::Grbl, Dialect::Marlin, Dialect::PlanetCnc] {
-                            ui.selectable_value(&mut dialect, d, dialect_label(d).tr(lang));
+                        for d in [
+                            None,
+                            Some(Dialect::Grbl),
+                            Some(Dialect::Marlin),
+                            Some(Dialect::PlanetCnc),
+                        ] {
+                            ui.selectable_value(&mut dialect, d, dialect_choice_label(d).tr(lang));
                         }
                     });
                 if dialect != self.win.dialect {
@@ -251,6 +256,9 @@ impl App {
         egui::CollapsingHeader::new(self.heading(Msg::SectionFindings))
             .default_open(true)
             .show(ui, |ui| {
+                if let Some(notice) = self.win.dialect_notice() {
+                    ui.label(egui::RichText::new(notice).color(ACCENT));
+                }
                 if rows.is_empty() {
                     ui.label(egui::RichText::new(Msg::NoFindings.tr(lang)).color(OK));
                 }
@@ -572,12 +580,13 @@ impl App {
     }
 }
 
-/// The word of a dialect.
-fn dialect_label(d: Dialect) -> Msg {
+/// The word of a choice of the dialect list.
+fn dialect_choice_label(d: Option<Dialect>) -> Msg {
     match d {
-        Dialect::Grbl => Msg::DialectGrbl,
-        Dialect::Marlin => Msg::DialectMarlin,
-        Dialect::PlanetCnc => Msg::DialectPlanetCnc,
+        None => Msg::DialectAuto,
+        Some(Dialect::Grbl) => Msg::DialectGrbl,
+        Some(Dialect::Marlin) => Msg::DialectMarlin,
+        Some(Dialect::PlanetCnc) => Msg::DialectPlanetCnc,
     }
 }
 

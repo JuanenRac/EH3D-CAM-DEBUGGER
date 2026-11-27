@@ -17,7 +17,7 @@
 
 ---
 
-**Ehrlichkeitscheck - was heute wirklich läuft:** eine Rust-Bibliothek und ein Kommandozeilenprogramm (`eh3d-camdebug`) mit 241 Tests, die auf einem Computer laufen: berechnet die Zeit eines G-Code-Programms und findet Eilgänge ins Material, Bewegungen außerhalb des Tisches, Schnitte bei stehender Spindel und Köpfe über Spannern. Es hat ein Fenster (Build mit `--features gui`), das ein G-Code-Programm öffnet, seine Bahn in 2D zeichnet, die Bewegungen Schritt für Schritt mit einer Zeilentabelle durchgeht und die Alarme und Warnungen zeigt, aber das Fenster wurde noch nicht auf einem Bildschirm angesehen; wurde an keiner Maschine ausprobiert und nicht an einer Sammlung echter Dateien geprüft.
+**Ehrlichkeitscheck - was heute wirklich läuft:** eine Rust-Bibliothek und ein Kommandozeilenprogramm (`eh3d-camdebug`) mit 244 Tests, die auf einem Computer laufen: berechnet die Zeit eines G-Code-Programms und findet Eilgänge ins Material, Bewegungen außerhalb des Tisches, Schnitte bei stehender Spindel und Köpfe über Spannern. Es hat ein Fenster (Build mit `--features gui`), das ein G-Code-Programm öffnet, seine Bahn in 2D zeichnet, die Bewegungen Schritt für Schritt mit einer Zeilentabelle durchgeht und die Alarme und Warnungen zeigt, aber das Fenster wurde noch nicht auf einem Bildschirm angesehen; wurde an keiner Maschine ausprobiert und nicht an einer Sammlung echter Dateien geprüft.
 
 ---
 
@@ -30,7 +30,7 @@
 |---|---|
 | Version | `0.1.0` |
 | Reifegrad | Funktionsfähig |
-| Tests | 241 |
+| Tests | 244 |
 | Technologie-Stack | Rust |
 | Auf echter Hardware | Nicht erprobt: nichts davon lief an einer Maschine |
 
@@ -46,7 +46,7 @@ Jede Zeile ist ein Teil dieses Repositorys, und die Ampel sagt, wie weit er heut
 |---|---|---|
 | Kern | 🟡 | berechnet die Zeit eines G-Code-Programms und findet Eilgänge ins Material, Bewegungen außerhalb des Tisches, Schnitte bei stehender Spindel und Köpfe über Spannern; am Computer mit normalen und beschädigten Eingaben getestet, nicht mit einer Sammlung echter Dateien. |
 | Kommandozeile | 🟡 | `eh3d-camdebug` führt dieselben Funktionen wie die Bibliothek aus und gibt das Ergebnis aus; jeder Fehler kommt als Meldung mit einem Exit-Code ungleich null zurück. |
-| Tests | 🟡 | 241 Tests bestehen (`cargo test`), mit Normalfällen, Grenzfällen und beschädigten Eingaben. Dazu gehört eine Simulation mit festem Seed für eine Maschine, die das Programm ausführt und gegen den Debugger gehalten wird, mit eingespeisten Fehlern und Wiederherstellung. |
+| Tests | 🟡 | 244 Tests bestehen (`cargo test`), mit Normalfällen, Grenzfällen und beschädigten Eingaben. Dazu gehört eine Simulation mit festem Seed für eine Maschine, die das Programm ausführt und gegen den Debugger gehalten wird, mit eingespeisten Fehlern und Wiederherstellung. |
 | Sicherheit | 🟡 | Reines sicheres Rust (`forbid(unsafe_code)`): nichts gerät bei den übergebenen Dateien in Panik und ein schlechter Wert ist ein Fehler mit Begründung; keine unabhängige Prüfung. |
 | Fenster | 🟠 | Geschrieben (egui, `--features gui`): Programm öffnen oder hineinziehen, seine Bahn in 2D sehen, die Bewegungen Schritt für Schritt durchgehen oder abspielen, eine Bewegungstabelle, die Alarme und Warnungen, die Einstellungen der Maschine und die Grenzen; die Logik ist getestet, aber noch nicht gebaut oder auf einem Bildschirm angesehen. |
 | Echte Hardware | 🔴 | Nicht erprobt: nichts davon wurde an einer Maschine ausgeführt. |
@@ -59,7 +59,7 @@ Jede Zeile ist ein Teil dieses Repositorys, und die Ampel sagt, wie weit er heut
 * **Eingeschaltete Spindel oder Laser:** Ein Programm, das damit und ohne `M5`, `M2` oder `M30` endet, ist eine Warnung (mit `--laser` ein Alarm); mit `--laser` ist ein Warten (`G4`) oder eine Pause (`M0`, `M1`) bei konstanter Leistung (`M3`) ein Alarm.
 * **Was der Leser nicht verstand** (Radiuskorrektur, Bohrzyklen, eine beschädigte Zeile), erscheint als Alarm mit seiner Zeile, sodass ein falsch gelesenes Programm nie als sauber gilt.
 * **Bögen, `--strict` und die Codes, die den Nullpunkt verschieben:** Tischgrenzen und Spannpratzen werden entlang des Bogens eines G2 oder G3 geprüft, nicht entlang seiner Sehne; `--strict` macht jede Warnung zum Alarm (Exit-Code 1), für einen Ablauf, der den Exit-Code als Schranke vor der Maschine nutzt; ein Programm mit G92, G53, G28, G30 oder G10 wird gemeldet, statt als sauber durchzugehen.
-* **Lesen und Meldungen nach Code:** Das Programm wird aus seinen Bytes gelesen (`--max-bytes N` verweigert eine Datei über dem Limit, standardmäßig 256 MiB; Text ohne UTF-8 wird als Latin-1 gelesen und mit dem Code `input-not-utf8` gemeldet); jeder Befund des Lesers zeigt seinen stabilen Code, und `--ignore CODE[,CODE]` lässt die Meldungen dieser Codes weg. Was eine Steuerung anders lesen würde, gilt nicht als sauber: `realtime-character` (ein Kommentar mit einem Zeichen, das GRBL sofort ausführt), `feed-mode-unsupported` (`G93`, `G95`) und `word-repeated` (ein Wort zweimal oder zwei Codes derselben Gruppe). Ein Programm für einen Marlin-Drucker, das mit dem voreingestellten GRBL-Dialekt gelesen wird (ein Wort `E` oder ein Temperaturcode), nennt in seinem ersten Befund dazu `--dialect marlin`.
+* **Lesen und Meldungen nach Code:** Das Programm wird aus seinen Bytes gelesen (`--max-bytes N` verweigert eine Datei über dem Limit, standardmäßig 256 MiB; Text ohne UTF-8 wird als Latin-1 gelesen und mit dem Code `input-not-utf8` gemeldet); jeder Befund des Lesers zeigt seinen stabilen Code, und `--ignore CODE[,CODE]` lässt die Meldungen dieser Codes weg. Was eine Steuerung anders lesen würde, gilt nicht als sauber: `realtime-character` (ein Kommentar mit einem Zeichen, das GRBL sofort ausführt), `feed-mode-unsupported` (`G93`, `G95`) und `word-repeated` (ein Wort zweimal oder zwei Codes derselben Gruppe). Ein Programm für einen Marlin-Drucker, das mit dem voreingestellten GRBL-Dialekt gelesen wird (ein Wort `E` oder ein Temperaturcode), nennt in seinem ersten Befund dazu `--dialect marlin`. Ohne gewählten Dialekt wird ein Programm, das sicher für einen 3D-Drucker ist (ein Temperaturcode mit Wert und eine Bewegung mit `E`-Wort, und kein `M3`, `M4` oder `M6`), als Marlin gelesen und das wird in der Ausgabe und im Fenster gesagt; `--dialect grbl` oder die Wahl im Fenster gelten immer, und im Zweifel wird als GRBL gelesen.
 
 ## 🧩 Rolle in EH3D
 
@@ -135,7 +135,7 @@ Um ein Bild des Fensters aufzunehmen, ohne es von Hand zu öffnen, starten Sie e
 
 ## 🧪 Tests
 
-Die Suite hat 241 Tests (`cargo test`, in der CI unter Windows und Linux). Sie prüfen Normalfälle, Grenzfälle und beschädigte Eingaben: leere Dateien, Datenmüll und abgeschnittene Dateien lösen nie eine Panik aus. Die CI führt außerdem `cargo fmt --check`, `cargo clippy` mit Warnungen als Fehlern und `python -I tools/ci_validate.py` aus.
+Die Suite hat 244 Tests (`cargo test`, in der CI unter Windows und Linux). Sie prüfen Normalfälle, Grenzfälle und beschädigte Eingaben: leere Dateien, Datenmüll und abgeschnittene Dateien lösen nie eine Panik aus. Die CI führt außerdem `cargo fmt --check`, `cargo clippy` mit Warnungen als Fehlern und `python -I tools/ci_validate.py` aus.
 
 ## 🏗️ Build und Veröffentlichung
 

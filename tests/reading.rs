@@ -1,7 +1,7 @@
 //! The file is read as bytes: a size limit, text that is not UTF-8, and the notices of the reader chosen by their code.
 
-use eh3d_cam_debugger::checks::{add_dialect_hint, check, Level, Limits};
-use eh3d_parser_gcode::{interpret, parse, parse_bytes, Dialect};
+use eh3d_cam_debugger::checks::{add_dialect_hint, check, parse_program, Level, Limits};
+use eh3d_parser_gcode::{interpret, parse, parse_bytes, Dialect, InputLimits};
 use std::fs;
 use std::process::Command;
 
@@ -68,14 +68,9 @@ fn the_command_line_applies_the_limit_the_encoding_and_the_filter() {
     assert_eq!(code, Some(2), "only warnings: {out}");
     assert!(out.contains("[input-not-utf8]"), "{out}");
     assert!(out.contains("[unknown-g-code]"), "{out}");
-    // the accented letter is in a comment, and GRBL obeys a byte outside ASCII wherever it stands
-    assert!(out.contains("[realtime-character]"), "{out}");
-    let (_, out, _) = run(&[
-        "check",
-        f,
-        "--ignore",
-        "input-not-utf8,unknown-g-code,realtime-character",
-    ]);
+    // an accented letter in a comment is taken: only what GRBL obeys there is told
+    assert!(!out.contains("[realtime-character]"), "{out}");
+    let (_, out, _) = run(&["check", f, "--ignore", "input-not-utf8,unknown-g-code"]);
     assert!(out.contains("no findings"), "{out}");
     let (code, _, err) = run(&["check", f, "--max-bytes", "10"]);
     assert_eq!(code, Some(1));
@@ -382,4 +377,63 @@ fn a_program_for_a_printer_read_as_grbl_says_which_dialect_to_choose() {
     // a mistake that says nothing about a printer gets no such advice
     assert_eq!(told(PROGRAM, Dialect::Grbl), 0);
     assert_eq!(told("G21 G90\nM77\nM2\n", Dialect::Grbl), 0);
+}
+
+#[test]
+fn only_a_program_that_is_surely_for_a_printer_is_read_as_marlin_by_itself() {
+    let read = |text: &str, chosen: Option<Dialect>| {
+        let (program, by_itself) =
+            parse_program(text.as_bytes(), chosen, &InputLimits::default()).unwrap();
+        (program.dialect, by_itself)
+    };
+    let print = "M104 S200\nG21 G90\nG1 X1 E0.5 F600\nM2\n";
+    assert_eq!(read(print, None), (Dialect::Marlin, true));
+    assert_eq!(read("M190 R60\nG0 X1 E2\n", None), (Dialect::Marlin, true));
+    // the choice of the person rules
+    assert_eq!(read(print, Some(Dialect::Grbl)), (Dialect::Grbl, false));
+    assert_eq!(read(print, Some(Dialect::Marlin)), (Dialect::Marlin, false));
+    // in doubt it stays GRBL: one sign alone, a temperature code with no value, `M1040`, an `E` outside a move, a spindle or a tool change
+    for doubt in [
+        "M104 S200\nG1 X1 F600\n",
+        "G1 X1 E0.5 F600\n",
+        "M104\nG1 X1 E0.5\n",
+        "M1040 S200\nG1 X1 E0.5\n",
+        "M104.1 S200\nG1 X1 E0.5\n",
+        "M104 S200\nG92 E0\n",
+        "M104 S200\nM3 S900\nG1 X1 E0.5\n",
+        "M104 S200\nT2 M6\nG1 X1 E0.5\n",
+        "(M104 S200)\nG1 X1 E0.5\n",
+    ] {
+        assert_eq!(read(doubt, None), (Dialect::Grbl, false), "{doubt:?}");
+    }
+}
+
+#[test]
+fn the_command_line_says_that_it_read_a_printer_program_as_marlin() {
+    let dir = std::env::temp_dir().join(format!("eh3d_camdebug_printer_{}", std::process::id()));
+    fs::create_dir_all(&dir).unwrap();
+    let file = dir.join("print.nc");
+    fs::write(&file, "M104 S200\nG21 G90\nG1 X1 E0.5 F600\nG1 X2 E1\nM2\n").unwrap();
+    let f = file.to_str().unwrap();
+    let (_, out, _) = run(&["check", f]);
+    assert!(
+        out.lines().next().unwrap().contains("--dialect grbl"),
+        "{out}"
+    );
+    assert!(!out.contains("[unknown-m-code]"), "{out}");
+    // a JSON report stays one object and carries it; the sentence goes to the error output
+    let (_, out, err) = run(&["check", f, "--json"]);
+    assert!(out.starts_with("{\"read_as\":\"marlin\","), "{out}");
+    assert!(err.contains("--dialect grbl"), "{err}");
+    let (_, out, err) = run(&["steps", f]);
+    assert_eq!(out.lines().count(), 2, "{out}");
+    assert!(err.contains("--dialect grbl"), "{err}");
+    // GRBL chosen by name is GRBL, with the advice on the first finding about the printer
+    let (_, out, err) = run(&["check", f, "--dialect", "grbl"]);
+    assert!(out.contains("--dialect marlin"), "{out}");
+    assert!(
+        !out.contains("--dialect grbl") && err.is_empty(),
+        "{out}{err}"
+    );
+    let _ = fs::remove_dir_all(&dir);
 }

@@ -3,14 +3,15 @@
 #![forbid(unsafe_code)]
 
 use eh3d_cam_debugger::checks::{
-    add_dialect_hint, add_left_on, check, check_json, has_alerts, strict, summary, Clamp, Level,
-    Limits,
+    add_dialect_hint, add_left_on, check, check_json, has_alerts, parse_program, strict, summary,
+    Clamp, Level, Limits,
 };
+use eh3d_cam_debugger::lang::{Lang, Msg};
 use eh3d_cam_debugger::server;
 use eh3d_cam_debugger::timeline::{dwell_s, format_time, timeline, Machine};
 use eh3d_parser_gcode::{
-    codes, interpret_with, parse_bytes_with, read_file_limited, Dialect, InputError, InputLimits,
-    InterpretOptions, ReadError,
+    codes, interpret_with, read_file_limited, Dialect, InputError, InputLimits, InterpretOptions,
+    ReadError,
 };
 use eh3d_serverclient::Settings as LinkSettings;
 use std::env;
@@ -24,7 +25,7 @@ const HELP: &str = "eh3d-camdebug: checks a G-code program before it reaches a m
   eh3d-camdebug [gui] [FILE.nc]             the window (a build with --features gui): with no arguments, with a program or with gui it opens; the commands above never open it
   eh3d-camdebug gui [FILE...] --shot OUT.png [--size WxH] [--theme forge|dark|light] [--wait N] [--lang CODE] [--replace]   a picture of the window (a build with --features gui)
 
-Options: --accel MM_S2 (500)  --rapid MM_MIN (3000)  --feed MM_MIN (300, used when a cut has no feed)  --dialect grbl|marlin|planetcnc
+Options: --accel MM_S2 (500)  --rapid MM_MIN (3000)  --feed MM_MIN (300, used when a cut has no feed)  --dialect grbl|marlin|planetcnc (none: GRBL, or Marlin, and said, for a program that is surely for a 3D printer)
          --table WIDTH,DEPTH  --surface Z (0)  --min-z Z  --max-feed MM_MIN  --laser (M3 or M4 with S0 is not burning)  --clamp X0,Y0,X1,Y1,HEIGHT (as many as needed)
          --max-plunge MM_MIN (warn of a plunge, a cut that goes down at least as far as it goes along, faster than that)  --end-z Z (warn when the program ends with the tool below Z)
          --require-end (warn when the program does not end with M2 or M30)
@@ -49,7 +50,8 @@ fn nums(text: &str, n: usize, what: &str) -> Result<Vec<f64>, String> {
 struct Options {
     machine: Machine,
     limits: Limits,
-    dialect: Dialect,
+    /// The dialect named with `--dialect`; `None` lets the program decide between GRBL and Marlin.
+    dialect: Option<Dialect>,
     strict: bool,
     laser: bool,
     json: bool,
@@ -73,7 +75,7 @@ fn ignored_codes(value: &str) -> Result<Vec<String>, String> {
 }
 
 fn parse_options(args: &[String]) -> Result<Options, String> {
-    let (mut m, mut l, mut d) = (Machine::default(), Limits::default(), Dialect::Grbl);
+    let (mut m, mut l, mut d) = (Machine::default(), Limits::default(), None);
     let mut strict = false;
     let mut laser = false;
     let mut json = false;
@@ -145,7 +147,7 @@ fn parse_options(args: &[String]) -> Result<Options, String> {
                 });
             }
             "--dialect" => {
-                d = match value()?.to_ascii_lowercase().as_str() {
+                d = Some(match value()?.to_ascii_lowercase().as_str() {
                     "grbl" => Dialect::Grbl,
                     "marlin" => Dialect::Marlin,
                     "planetcnc" => Dialect::PlanetCnc,
@@ -154,7 +156,7 @@ fn parse_options(args: &[String]) -> Result<Options, String> {
                             "--dialect '{other}' is not grbl, marlin or planetcnc"
                         ))
                     }
-                }
+                })
             }
             other => return Err(format!("{other}: unknown option")),
         }
@@ -366,7 +368,6 @@ fn run(mut args: Vec<String>) -> Result<u8, Fail> {
         link_from(config.as_deref()).map_err(Fail::Usage)?;
         None
     };
-    let dialect_name = format!("{dialect:?}").to_ascii_lowercase();
     let bytes = read_file_limited(std::path::Path::new(&file), &InputLimits { max_bytes })
         .map_err(|e| match e {
             ReadError::TooLarge(InputError::TooLarge { size, limit }) => {
@@ -374,8 +375,19 @@ fn run(mut args: Vec<String>) -> Result<u8, Fail> {
             }
             other => format!("{file}: {other}"),
         })?;
-    let program = parse_bytes_with(&bytes, dialect, &InputLimits { max_bytes })
+    let (program, read_as_marlin) = parse_program(&bytes, dialect, &InputLimits { max_bytes })
         .map_err(|e| format!("{file}: {e}"))?;
+    let dialect_name = format!("{:?}", program.dialect).to_ascii_lowercase();
+    // said before anything else; on the error output where the standard one is a listing or a JSON object that another program reads
+    let note = read_as_marlin
+        .then(|| Msg::ReadAsMarlin.tr(Lang::from_code(language()).unwrap_or(Lang::En)));
+    if let Some(note) = note {
+        if cmd == "check" && !json {
+            println!("{note}");
+        } else {
+            eprintln!("{note}");
+        }
+    }
     let trace = interpret_with(&program, &InterpretOptions { s0_is_off: laser });
     let tl = timeline(&trace, &machine)?;
     match cmd.as_str() {
@@ -386,7 +398,7 @@ fn run(mut args: Vec<String>) -> Result<u8, Fail> {
             if strict_mode {
                 strict(&mut findings);
             }
-            let report = check_json(
+            let mut report = check_json(
                 &trace,
                 tl.total_s,
                 tl.cutting_s,
@@ -394,6 +406,10 @@ fn run(mut args: Vec<String>) -> Result<u8, Fail> {
                 dwell_s(&program),
                 &findings,
             );
+            if read_as_marlin {
+                // the report says it too, for the program that reads it
+                report = report.replacen('{', "{\"read_as\":\"marlin\",", 1);
+            }
             println!("{report}");
             if let Some(link) = &link {
                 keep_report(link, &file, &dialect_name, &report, &findings)?;
