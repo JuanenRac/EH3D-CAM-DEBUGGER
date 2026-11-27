@@ -144,7 +144,7 @@ jobs:
           name="cam-debugger-${version}-${MATRIX_LABEL}"
           mkdir "$name"
           cp "target/${MATRIX_TARGET}/release/eh3d-camdebug${MATRIX_EXT}" "$name/"
-          cp LICENSE README.md CHANGELOG.md "$name/"
+          cp LICENSE README.md CHANGELOG.md docs/THIRD_PARTY_NOTICES "$name/"
           # the sample files, as examples
           cp -r examples "$name/examples"
           # the icon of the program

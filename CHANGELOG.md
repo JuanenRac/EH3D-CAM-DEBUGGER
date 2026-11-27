@@ -4,6 +4,8 @@ All notable changes to this project are documented here.
 
 ## [Unreleased]
 
+- **Third-party notices in every package (`docs/THIRD_PARTY_NOTICES`):** the packages of the releases now carry the copyright notices and licence texts of the Rust crates and of the data the program is built with, and the CI fails when a new dependency or licence is not in the file.
+
 ## [0.1.0] - A program that ends with the spindle or the laser on is no longer clean
 
 - **Built against the tag v0.1.4 of EH3D-CORE-LIBS** (it was v0.1.1), also for the binaries of a release (they took its main branch): its G-code reader no longer calls clean what a controller would run differently, and `check` and the window show it with the code: a character that GRBL obeys at once inside a comment (`realtime-character`, a warning), `G93`/`G95` (`feed-mode-unsupported`), a word written twice or two codes of one group (`word-repeated`), a `$` command that is not a question, text after `M2`/`M30`, an unknown code with axis words and, with GRBL, spaces inside a number counted as the controller counts them.
