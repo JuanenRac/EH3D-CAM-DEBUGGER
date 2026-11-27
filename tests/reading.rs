@@ -68,7 +68,14 @@ fn the_command_line_applies_the_limit_the_encoding_and_the_filter() {
     assert_eq!(code, Some(2), "only warnings: {out}");
     assert!(out.contains("[input-not-utf8]"), "{out}");
     assert!(out.contains("[unknown-g-code]"), "{out}");
-    let (_, out, _) = run(&["check", f, "--ignore", "input-not-utf8,unknown-g-code"]);
+    // the accented letter is in a comment, and GRBL obeys a byte outside ASCII wherever it stands
+    assert!(out.contains("[realtime-character]"), "{out}");
+    let (_, out, _) = run(&[
+        "check",
+        f,
+        "--ignore",
+        "input-not-utf8,unknown-g-code,realtime-character",
+    ]);
     assert!(out.contains("no findings"), "{out}");
     let (code, _, err) = run(&["check", f, "--max-bytes", "10"]);
     assert_eq!(code, Some(1));
