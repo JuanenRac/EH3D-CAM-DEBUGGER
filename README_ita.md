@@ -17,7 +17,7 @@
 
 ---
 
-**Verifica di onestà - cosa funziona oggi:** una libreria Rust e un programma a riga di comando (`eh3d-camdebug`) con 237 test eseguiti su un computer: calcola il tempo di un programma G-code e trova movimenti rapidi nel materiale, movimenti fuori dal piano, tagli a mandrino fermo e teste sopra i morsetti. Ha una finestra (compilata con `--features gui`) che apre un programma G-code, ne disegna il percorso in 2D, scorre i movimenti passo passo con una tabella delle righe e mostra allarmi e avvisi, ma la finestra non è ancora stata vista su uno schermo; non è stato provato su una macchina e non è stato verificato su una raccolta di file reali.
+**Verifica di onestà - cosa funziona oggi:** una libreria Rust e un programma a riga di comando (`eh3d-camdebug`) con 239 test eseguiti su un computer: calcola il tempo di un programma G-code e trova movimenti rapidi nel materiale, movimenti fuori dal piano, tagli a mandrino fermo e teste sopra i morsetti. Ha una finestra (compilata con `--features gui`) che apre un programma G-code, ne disegna il percorso in 2D, scorre i movimenti passo passo con una tabella delle righe e mostra allarmi e avvisi, ma la finestra non è ancora stata vista su uno schermo; non è stato provato su una macchina e non è stato verificato su una raccolta di file reali.
 
 ---
 
@@ -30,7 +30,7 @@
 |---|---|
 | Versione | `0.0.9` |
 | Maturità | Funzionale |
-| Test | 237 |
+| Test | 239 |
 | Stack tecnologico | Rust |
 | Su hardware reale | Non provato: nulla di questo ha girato su una macchina |
 
@@ -46,7 +46,7 @@ Ogni riga è una parte di questo repository e il semaforo dice a che punto è og
 |---|---|---|
 | Nucleo | 🟡 | calcola il tempo di un programma G-code e trova movimenti rapidi nel materiale, movimenti fuori dal piano, tagli a mandrino fermo e teste sopra i morsetti; provato su un computer con input normali e danneggiati, non con una raccolta di file reali. |
 | Riga di comando | 🟡 | `eh3d-camdebug` esegue le stesse funzioni della libreria e stampa il risultato; ogni errore torna come messaggio e codice di uscita diverso da zero. |
-| Test | 🟡 | 237 test passano (`cargo test`), con casi normali, casi limite e input danneggiati. Includono una simulazione a seme fisso di una macchina che esegue il programma e viene confrontata con il debugger, con guasti iniettati e ripristino. |
+| Test | 🟡 | 239 test passano (`cargo test`), con casi normali, casi limite e input danneggiati. Includono una simulazione a seme fisso di una macchina che esegue il programma e viene confrontata con il debugger, con guasti iniettati e ripristino. |
 | Sicurezza | 🟡 | Rust sicuro e semplice (`forbid(unsafe_code)`): nulla va in panico con i file ricevuti e un valore errato è un errore con il suo motivo; nessuna revisione indipendente. |
 | Finestra | 🟠 | Scritta (egui, `--features gui`): aprire o trascinare un programma, vederne il percorso in 2D, scorrere i movimenti passo passo o riprodurli, una tabella dei movimenti, allarmi e avvisi, le impostazioni della macchina e i limiti; la sua logica è testata, ma non è ancora stata compilata né vista su uno schermo. |
 | Hardware reale | 🔴 | Non provato: nulla di questo è stato eseguito su una macchina. |
@@ -56,6 +56,7 @@ Ogni riga è una parte di questo repository e il semaforo dice a che punto è og
 
 * **Il tempo** (`src/timeline.rs`): ogni movimento è un trapezio di velocità da fermo a fermo con l'accelerazione e la velocità rapida della macchina; gli archi si misurano lungo l'arco, un taglio senza avanzamento ne usa uno predefinito e il totale si divide in taglio e rapido. È un limite superiore: un controllore reale non si ferma tra i movimenti. Le attese di `G4` (`P` in secondi, in millisecondi in Marlin con `S` in secondi) non sono movimenti e vengono sommate a parte.
 * **Gli avvisi** (`src/checks.rs`): un movimento rapido (G0) nel materiale o di lato sotto la superficie, un movimento fuori dal piano, una Z sotto la più bassa della macchina e una testa che passa sopra un morsetto sotto la sua altezza sono allarmi (codice di uscita 1); un taglio a mandrino fermo, un taglio senza avanzamento e un avanzamento sopra un limite sono avvertenze. Un movimento rettilineo viene verificato esattamente contro ogni staffa, quindi si trova anche una staffa più sottile di qualsiasi passo.
+* **Mandrino o laser lasciato acceso:** un programma che termina così, senza `M5`, `M2` o `M30`, è un avviso (un allarme con `--laser`); con `--laser`, un'attesa (`G4`) o una pausa (`M0`, `M1`) a potenza costante (`M3`) è un allarme.
 * **Ciò che il lettore non ha capito** (compensazione del raggio, cicli fissi, una riga danneggiata) appare come allarme con la sua riga, così un programma letto male non è mai dato per pulito.
 * **Archi, `--strict` e codici che spostano l'origine:** i limiti del piano e i morsetti sono verificati lungo l'arco di un G2 o G3, non lungo la sua corda; `--strict` trasforma ogni avviso in allarme (codice di uscita 1), per un flusso che usa il codice di uscita come barriera prima della macchina; un programma con G92, G53, G28, G30 o G10 viene segnalato invece di passare per pulito.
 * **Lettura e avvisi per codice:** il programma viene letto dai suoi byte (`--max-bytes N` rifiuta un file oltre il limite, 256 MiB di default; il testo non UTF-8 viene letto come Latin-1 e segnalato con il codice `input-not-utf8`); ogni rilievo del lettore mostra il suo codice stabile, e `--ignore CODE[,CODE]` omette gli avvisi di quei codici.
@@ -134,7 +135,7 @@ Per fare un'immagine della finestra senza aprirla a mano, eseguila con `--shot F
 
 ## 🧪 Test
 
-La suite ha 237 test (`cargo test`, eseguiti su Windows e Linux nella CI). Verificano i casi normali, i casi limite e gli input danneggiati: file vuoti, spazzatura e file tagliati non causano mai un panico. La CI esegue anche `cargo fmt --check`, `cargo clippy` con gli avvisi come errori e `python -I tools/ci_validate.py`.
+La suite ha 239 test (`cargo test`, eseguiti su Windows e Linux nella CI). Verificano i casi normali, i casi limite e gli input danneggiati: file vuoti, spazzatura e file tagliati non causano mai un panico. La CI esegue anche `cargo fmt --check`, `cargo clippy` con gli avvisi come errori e `python -I tools/ci_validate.py`.
 
 ## 🏗️ Compilazione e rilascio
 

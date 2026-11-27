@@ -4,6 +4,8 @@ All notable changes to this project are documented here.
 
 ## [Unreleased]
 
+- **A spindle or a laser left on is told:** a program that ends with it on and no `M5`, `M2` or `M30` was reported as having nothing wrong; it is a warning for a spindle and an alert with `--laser`. With `--laser`, a wait (`G4`) or a pause (`M0`, `M1`) at constant power (`M3`) is an alert. Host-tested only.
+
 ## [0.0.9] - Warns of large arcs that leave the table, and more tests
 
 - Fix the check of the table for arcs (safety): a large arc that leaves the table by less than the distance between the points sampled along it (up to about 0.1 mm on a radius of 100 mm) was not reported; the farthest points of its circle are now checked too.
