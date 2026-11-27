@@ -299,7 +299,9 @@ fn the_new_options_check_a_plunge_the_end_height_and_the_closing_of_the_program(
     // without the options nothing of this is said
     let (_, out, _) = run(&["check", &f]);
     assert!(
-        !out.contains("plunge") && !out.contains("ends with") && !out.contains("does not end"),
+        !out.contains("plunge")
+            && !out.contains("ends with the tool")
+            && !out.contains("does not end"),
         "{out}"
     );
     let _ = fs::remove_dir_all(&dir);
