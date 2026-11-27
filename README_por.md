@@ -17,7 +17,7 @@
 
 ---
 
-**Verificação de honestidade - o que funciona hoje:** uma biblioteca Rust e um programa de linha de comandos (`eh3d-camdebug`) com 239 testes que correm num computador: calcula o tempo de um programa G-code e encontra movimentos rápidos para o material, movimentos fora da mesa, cortes com o fuso parado e cabeçotes sobre grampos. Tem uma janela (compilada com `--features gui`) que abre um programa G-code, desenha a sua trajetória em 2D, percorre os movimentos passo a passo com uma tabela de linhas e mostra os alertas e avisos, mas a janela ainda não foi vista num ecrã; não foi experimentado numa máquina e não foi verificado com uma coleção de ficheiros reais.
+**Verificação de honestidade - o que funciona hoje:** uma biblioteca Rust e um programa de linha de comandos (`eh3d-camdebug`) com 241 testes que correm num computador: calcula o tempo de um programa G-code e encontra movimentos rápidos para o material, movimentos fora da mesa, cortes com o fuso parado e cabeçotes sobre grampos. Tem uma janela (compilada com `--features gui`) que abre um programa G-code, desenha a sua trajetória em 2D, percorre os movimentos passo a passo com uma tabela de linhas e mostra os alertas e avisos, mas a janela ainda não foi vista num ecrã; não foi experimentado numa máquina e não foi verificado com uma coleção de ficheiros reais.
 
 ---
 
@@ -30,7 +30,7 @@
 |---|---|
 | Versão | `0.0.9` |
 | Maturidade | Funcional |
-| Testes | 239 |
+| Testes | 241 |
 | Tecnologias | Rust |
 | Em hardware real | Não experimentado: nada disto correu numa máquina |
 
@@ -46,7 +46,7 @@ Cada linha é uma parte deste repositório e a luz diz até onde chega hoje. É 
 |---|---|---|
 | Núcleo | 🟡 | calcula o tempo de um programa G-code e encontra movimentos rápidos para o material, movimentos fora da mesa, cortes com o fuso parado e cabeçotes sobre grampos; testado num computador com entradas normais e danificadas, não com uma coleção de ficheiros reais. |
 | Linha de comandos | 🟡 | `eh3d-camdebug` executa as mesmas funções da biblioteca e imprime o resultado; cada erro volta como mensagem e código de saída diferente de zero. |
-| Testes | 🟡 | 239 testes passam (`cargo test`), com casos normais, casos-limite e entradas danificadas. Incluem uma simulação com semente fixa de uma máquina que executa o programa e é confrontada com o depurador, com falhas injetadas e recuperação. |
+| Testes | 🟡 | 241 testes passam (`cargo test`), com casos normais, casos-limite e entradas danificadas. Incluem uma simulação com semente fixa de uma máquina que executa o programa e é confrontada com o depurador, com falhas injetadas e recuperação. |
 | Segurança | 🟡 | Rust seguro e simples (`forbid(unsafe_code)`): nada entra em pânico com os ficheiros recebidos e um valor mau é um erro com o seu motivo; sem revisão independente. |
 | Janela | 🟠 | Escrita (egui, `--features gui`): abrir ou largar um programa, ver a sua trajetória em 2D, percorrer os movimentos passo a passo ou reproduzi-los, uma tabela de movimentos, os alertas e avisos, as definições da máquina e os limites; a sua lógica está testada, mas ainda não foi compilada nem vista num ecrã. |
 | Hardware real | 🔴 | Não experimentado: nada disto foi executado numa máquina. |
@@ -59,7 +59,7 @@ Cada linha é uma parte deste repositório e a luz diz até onde chega hoje. É 
 * **Fuso ou laser deixado ligado:** um programa que termina assim, sem `M5`, `M2` ou `M30`, é um aviso (um alerta com `--laser`); com `--laser`, uma espera (`G4`) ou uma pausa (`M0`, `M1`) com potência constante (`M3`) é um alerta.
 * **O que o leitor não conseguiu entender** (compensação de raio, ciclos fixos, uma linha danificada) aparece como alerta com a sua linha, de modo que um programa mal lido nunca é dado como limpo.
 * **Arcos, `--strict` e os códigos que movem a origem:** os limites da mesa e as grampos verificam-se ao longo do arco de um G2 ou G3, não da sua corda; `--strict` transforma cada aviso em alerta (código de saída 1), para um fluxo que usa o código de saída como barreira antes da máquina; um programa com G92, G53, G28, G30 ou G10 é assinalado em vez de passar por limpo.
-* **Leitura e avisos por código:** o programa é lido a partir dos seus bytes (`--max-bytes N` recusa um ficheiro acima do limite, 256 MiB por omissão; o texto que não é UTF-8 é lido como Latin-1 e indicado com o código `input-not-utf8`); cada achado do leitor mostra o seu código estável, e `--ignore CODE[,CODE]` omite os avisos desses códigos.
+* **Leitura e avisos por código:** o programa é lido a partir dos seus bytes (`--max-bytes N` recusa um ficheiro acima do limite, 256 MiB por omissão; o texto que não é UTF-8 é lido como Latin-1 e indicado com o código `input-not-utf8`); cada achado do leitor mostra o seu código estável, e `--ignore CODE[,CODE]` omite os avisos desses códigos. O que um controlador leria de outra forma não passa por limpo: `realtime-character` (um comentário com um carácter que o GRBL obedece de imediato), `feed-mode-unsupported` (`G93`, `G95`) e `word-repeated` (uma palavra duas vezes ou dois códigos do mesmo grupo). Um programa para uma impressora Marlin lido com o dialeto GRBL por omissão (uma palavra `E` ou um código de temperatura) nomeia `--dialect marlin` no seu primeiro achado sobre isso.
 
 ## 🧩 Papel no EH3D
 
@@ -135,7 +135,7 @@ Para tirar uma captura da janela sem a abrir à mão, execute-o com `--shot FICH
 
 ## 🧪 Testes
 
-O conjunto tem 239 testes (`cargo test`, executados em Windows e Linux no CI). Verificam os casos normais, os casos-limite e as entradas danificadas: ficheiros vazios, lixo e ficheiros cortados nunca provocam pânico. O CI executa ainda `cargo fmt --check`, `cargo clippy` com avisos como erros e `python -I tools/ci_validate.py`.
+O conjunto tem 241 testes (`cargo test`, executados em Windows e Linux no CI). Verificam os casos normais, os casos-limite e as entradas danificadas: ficheiros vazios, lixo e ficheiros cortados nunca provocam pânico. O CI executa ainda `cargo fmt --check`, `cargo clippy` com avisos como erros e `python -I tools/ci_validate.py`.
 
 ## 🏗️ Compilação e publicação
 

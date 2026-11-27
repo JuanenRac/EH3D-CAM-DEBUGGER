@@ -1,7 +1,7 @@
 //! The file is read as bytes: a size limit, text that is not UTF-8, and the notices of the reader chosen by their code.
 
-use eh3d_cam_debugger::checks::{check, Limits};
-use eh3d_parser_gcode::{interpret, parse_bytes, Dialect};
+use eh3d_cam_debugger::checks::{add_dialect_hint, check, Level, Limits};
+use eh3d_parser_gcode::{interpret, parse, parse_bytes, Dialect};
 use std::fs;
 use std::process::Command;
 
@@ -68,7 +68,14 @@ fn the_command_line_applies_the_limit_the_encoding_and_the_filter() {
     assert_eq!(code, Some(2), "only warnings: {out}");
     assert!(out.contains("[input-not-utf8]"), "{out}");
     assert!(out.contains("[unknown-g-code]"), "{out}");
-    let (_, out, _) = run(&["check", f, "--ignore", "input-not-utf8,unknown-g-code"]);
+    // the accented letter is in a comment, and GRBL obeys a byte outside ASCII wherever it stands
+    assert!(out.contains("[realtime-character]"), "{out}");
+    let (_, out, _) = run(&[
+        "check",
+        f,
+        "--ignore",
+        "input-not-utf8,unknown-g-code,realtime-character",
+    ]);
     assert!(out.contains("no findings"), "{out}");
     let (code, _, err) = run(&["check", f, "--max-bytes", "10"]);
     assert_eq!(code, Some(1));
@@ -327,4 +334,52 @@ fn the_keys_of_the_link_are_read_from_the_config_file_with_their_ranges() {
         assert!(err.contains(word) && err.contains("line"), "{text}: {err}");
     }
     let _ = fs::remove_dir_all(&dir);
+}
+
+#[test]
+fn what_a_controller_would_read_otherwise_is_told_with_its_code() {
+    let text = "G21 G90
+M3 S1000 (go!)
+G93 G1 X1 F1
+G94 G1 X1 X2 F100
+M5
+M2
+";
+    let f = check(&interpret(&parse(text, Dialect::Grbl)), &Limits::default());
+    for (line, code, level) in [
+        (2, "[realtime-character]", Level::Warning),
+        (3, "[feed-mode-unsupported]", Level::Alert),
+        (4, "[word-repeated]", Level::Alert),
+    ] {
+        assert!(
+            f.iter()
+                .any(|f| f.line == line && f.level == level && f.message.contains(code)),
+            "{code}: {f:?}"
+        );
+    }
+}
+
+#[test]
+fn a_program_for_a_printer_read_as_grbl_says_which_dialect_to_choose() {
+    let findings = |text: &str, dialect: Dialect| {
+        let program = parse(text, dialect);
+        let mut f = check(&interpret(&program), &Limits::default());
+        add_dialect_hint(&mut f, &program);
+        f
+    };
+    let told = |text: &str, dialect: Dialect| {
+        findings(text, dialect)
+            .iter()
+            .filter(|f| f.message.contains("--dialect marlin"))
+            .count()
+    };
+    // told once, on the first finding of the reader that is about a word or a code of a printer
+    let print = "M104 S200\nG21 G90\nG1 X1 E0.5 F600\nG1 X2 E1\nM2\n";
+    assert_eq!(told(print, Dialect::Grbl), 1);
+    assert_eq!(told(print, Dialect::Marlin), 0);
+    let alerts = findings(print, Dialect::Grbl);
+    assert!(alerts.iter().any(|f| f.level == Level::Alert), "{alerts:?}");
+    // a mistake that says nothing about a printer gets no such advice
+    assert_eq!(told(PROGRAM, Dialect::Grbl), 0);
+    assert_eq!(told("G21 G90\nM77\nM2\n", Dialect::Grbl), 0);
 }

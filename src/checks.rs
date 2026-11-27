@@ -1,6 +1,6 @@
 //! What would hurt: each finding has the line of the program, how serious it is and what it is.
 
-use eh3d_parser_gcode::{codes, Motion, Program, Segment, Severity, Trace};
+use eh3d_parser_gcode::{codes, Dialect, Motion, Program, Segment, Severity, Trace};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Level {
@@ -329,6 +329,32 @@ pub fn check(trace: &Trace, limits: &Limits) -> Vec<Finding> {
     out.sort_by_key(|f| f.line);
     out.dedup_by(|a, b| a.line == b.line && a.message == b.message);
     out
+}
+
+/// What is added to the first finding of the reader when a program read with the GRBL dialect carries what a program for a Marlin printer does.
+const MARLIN_HINT: &str = "; this looks like a program for a Marlin printer: choose the Marlin dialect (--dialect marlin, or the dialect list of the window)";
+
+/// Says how to read a program for a Marlin printer that was read with the GRBL dialect (an extruder word `E` or a temperature code `M104`, `M109`, `M140` or `M190`): the
+/// first finding of the reader about such a word or code says which dialect to choose. No finding is added and no level changes, so the exit code is the same.
+pub fn add_dialect_hint(findings: &mut [Finding], program: &Program) {
+    if program.dialect != Dialect::Grbl {
+        return;
+    }
+    let marlin = program.blocks.iter().any(|b| {
+        b.words.iter().any(|w| {
+            w.letter == 'E' || (w.letter == 'M' && [104.0, 109.0, 140.0, 190.0].contains(&w.value))
+        })
+    });
+    if !marlin {
+        return;
+    }
+    let tags = [codes::UNKNOWN_WORD, codes::UNKNOWN_M_CODE].map(|c| format!("[{c}]"));
+    if let Some(f) = findings
+        .iter_mut()
+        .find(|f| tags.iter().any(|t| f.message.ends_with(t.as_str())))
+    {
+        f.message.push_str(MARLIN_HINT);
+    }
 }
 
 /// Adds what the moves alone do not show: a spindle or a laser that is on where nothing moves. At the end of a program with no `M5`, `M2` or `M30` it stays on (an alert for a

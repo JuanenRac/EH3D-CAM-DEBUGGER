@@ -17,7 +17,7 @@
 
 ---
 
-**Comprobación de honestidad - lo que funciona hoy:** una biblioteca Rust y un programa de línea de comandos (`eh3d-camdebug`) con 239 pruebas que se ejecutan en un ordenador: calcula el tiempo de un programa G-code y encuentra movimientos rápidos al material, movimientos fuera de la mesa, cortes con el husillo parado y cabezales sobre pinzas. Tiene una ventana (se compila con `--features gui`) que abre un programa G-code, dibuja su trayectoria en 2D, recorre los movimientos paso a paso con una tabla de líneas y muestra las alertas y advertencias, pero todavía no se ha visto en una pantalla; no se ha probado en una máquina y no se ha comprobado con una colección de ficheros reales.
+**Comprobación de honestidad - lo que funciona hoy:** una biblioteca Rust y un programa de línea de comandos (`eh3d-camdebug`) con 241 pruebas que se ejecutan en un ordenador: calcula el tiempo de un programa G-code y encuentra movimientos rápidos al material, movimientos fuera de la mesa, cortes con el husillo parado y cabezales sobre pinzas. Tiene una ventana (se compila con `--features gui`) que abre un programa G-code, dibuja su trayectoria en 2D, recorre los movimientos paso a paso con una tabla de líneas y muestra las alertas y advertencias, pero todavía no se ha visto en una pantalla; no se ha probado en una máquina y no se ha comprobado con una colección de ficheros reales.
 
 ---
 
@@ -30,7 +30,7 @@
 |---|---|
 | Versión | `0.0.9` |
 | Madurez | Funcional |
-| Pruebas | 239 |
+| Pruebas | 241 |
 | Pila tecnológica | Rust |
 | En hardware real | No probado: nada de esto se ha ejecutado en una máquina |
 
@@ -46,7 +46,7 @@ Cada línea es una parte de este repositorio y la luz dice hasta dónde llega ho
 |---|---|---|
 | Núcleo | 🟡 | calcula el tiempo de un programa G-code y encuentra movimientos rápidos al material, movimientos fuera de la mesa, cortes con el husillo parado y cabezales sobre pinzas; probado en un ordenador con entradas normales y dañadas, no con una colección de ficheros reales. |
 | Línea de comandos | 🟡 | `eh3d-camdebug` ejecuta las mismas funciones que la biblioteca e imprime el resultado; cada error vuelve como mensaje y un código de salida distinto de cero. |
-| Pruebas | 🟡 | 239 pruebas pasan (`cargo test`), con casos normales, casos límite y entradas dañadas. Incluyen una simulación con semilla fija de una máquina que ejecuta el programa y se contrasta con el depurador, con fallos inyectados y recuperación. |
+| Pruebas | 🟡 | 241 pruebas pasan (`cargo test`), con casos normales, casos límite y entradas dañadas. Incluyen una simulación con semilla fija de una máquina que ejecuta el programa y se contrasta con el depurador, con fallos inyectados y recuperación. |
 | Seguridad | 🟡 | Rust seguro y simple (`forbid(unsafe_code)`): nada entra en pánico con los ficheros recibidos y un valor malo es un error con su motivo; sin revisión independiente. |
 | Ventana | 🟠 | Escrita (egui, `--features gui`): abrir o soltar un programa, ver su trayectoria en 2D, recorrer los movimientos paso a paso o reproducirlos, una tabla de movimientos, las alertas y advertencias, los ajustes de la máquina y los límites; su lógica está probada, pero todavía no se ha compilado ni visto en una pantalla. |
 | Hardware real | 🔴 | No probado: nada de esto se ha ejecutado en una máquina. |
@@ -59,7 +59,7 @@ Cada línea es una parte de este repositorio y la luz dice hasta dónde llega ho
 * **Husillo o láser que se queda encendido:** un programa que termina así, sin `M5`, `M2` ni `M30`, es un aviso (una alerta con `--laser`); con `--laser`, una espera (`G4`) o una pausa (`M0`, `M1`) a potencia constante (`M3`) es una alerta.
 * **Lo que el lector no pudo entender** (compensación de radio, ciclos fijos, una línea dañada) aparece como alerta con su línea, de modo que un programa mal leído nunca se da por limpio.
 * **Arcos, `--strict` y los códigos que mueven el origen:** los límites de la mesa y las bridas se comprueban a lo largo del arco de un G2 o G3, no de su cuerda; `--strict` convierte cada aviso en alerta (código de salida 1), para un flujo que usa el código de salida como barrera antes de la máquina; un programa con G92, G53, G28, G30 o G10 se señala en vez de pasar por limpio.
-* **Lectura y avisos por código:** el programa se lee desde sus bytes (`--max-bytes N` rechaza un fichero que pasa del límite, 256 MiB por defecto; el texto que no es UTF-8 se lee como Latin-1 y se indica con el código `input-not-utf8`); cada hallazgo del lector muestra su código estable, y `--ignore CODE[,CODE]` omite los avisos de esos códigos.
+* **Lectura y avisos por código:** el programa se lee desde sus bytes (`--max-bytes N` rechaza un fichero que pasa del límite, 256 MiB por defecto; el texto que no es UTF-8 se lee como Latin-1 y se indica con el código `input-not-utf8`); cada hallazgo del lector muestra su código estable, y `--ignore CODE[,CODE]` omite los avisos de esos códigos. Lo que un controlador leería de otra forma no pasa por limpio: `realtime-character` (un comentario con un carácter que GRBL obedece al instante), `feed-mode-unsupported` (`G93`, `G95`) y `word-repeated` (una palabra dos veces o dos códigos del mismo grupo). Un programa para una impresora Marlin leído con el dialecto GRBL por defecto (una palabra `E` o un código de temperatura) nombra `--dialect marlin` en su primer hallazgo sobre ello.
 
 ## 🧩 Papel en EH3D
 
@@ -135,7 +135,7 @@ Para sacar una captura de la ventana sin abrirla a mano, ejecútelo con `--shot 
 
 ## 🧪 Pruebas
 
-El conjunto tiene 239 pruebas (`cargo test`, ejecutadas en Windows y Linux en el CI). Comprueban los casos normales, los casos límite y las entradas dañadas: ficheros vacíos, basura y ficheros cortados nunca provocan un pánico. El CI ejecuta además `cargo fmt --check`, `cargo clippy` con las advertencias como errores y `python -I tools/ci_validate.py`.
+El conjunto tiene 241 pruebas (`cargo test`, ejecutadas en Windows y Linux en el CI). Comprueban los casos normales, los casos límite y las entradas dañadas: ficheros vacíos, basura y ficheros cortados nunca provocan un pánico. El CI ejecuta además `cargo fmt --check`, `cargo clippy` con las advertencias como errores y `python -I tools/ci_validate.py`.
 
 ## 🏗️ Compilación y publicación
 
