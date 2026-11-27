@@ -2,7 +2,7 @@
 
 This register is the single source of the state of each capability: `STATUS.md` and the README files cite it and never state a state that it does not. A state is one of `planned`, `prototype`, `implemented` and `validated`. `validated` means that a person has run the capability on a real machine and the evidence of the manifest says `bench` or `field`; nothing here is validated, because nothing of this program has been compared with a real machine.
 
-The register has 33 requirements: 24 implemented, 4 prototype, 5 planned and 0 validated. By progress: 24 done, 4 partial, 1 pending and 4 blocked. High coverage is not proof of correctness, so each row says how it is checked: the test that names it, and what it shows.
+The register has 34 requirements: 25 implemented, 4 prototype, 5 planned and 0 validated. By progress: 25 done, 4 partial, 1 pending and 4 blocked. High coverage is not proof of correctness, so each row says how it is checked: the test that names it, and what it shows.
 
 ## How to read the register
 
@@ -76,4 +76,5 @@ The check is `tests/reqs.rs`: it reads this table, finds each test and fails whe
 
 | ID | Requirement | State | Progress | Evidence | Test | Limits |
 |---|---|---|---|---|---|---|
-| CDBG-033 | A program for a Marlin printer read as GRBL names the dialect to choose, without changing the levels or the exit code. | implemented | done | host-test | `reading::a_program_for_a_printer_read_as_grbl_says_which_dialect_to_choose` | Recognised by an `E` word or the codes M104, M109, M140 and M190; the default dialect stays GRBL. |
+| CDBG-033 | A program for a Marlin printer read as GRBL names the dialect to choose, without changing the levels or the exit code. | implemented | done | host-test | `reading::a_program_for_a_printer_read_as_grbl_says_which_dialect_to_choose` | Recognised by an `E` word or the codes M104, M109, M140 and M190; it applies when the program is read as GRBL. |
+| CDBG-034 | With no dialect chosen, a program that is surely for a 3D printer is read as Marlin and that is said in the output and in the window; a chosen dialect always rules. | implemented | done | host-test | `reading::only_a_program_that_is_surely_for_a_printer_is_read_as_marlin_by_itself` | A temperature code with its value, a move with an `E` word and no M3, M4 or M6; not tried with real printer files. |

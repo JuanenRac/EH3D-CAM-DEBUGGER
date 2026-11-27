@@ -22,8 +22,8 @@ permissions:
   contents: read
 
 env:
-  # The tag of each sibling repository this one is built against (name=tag, separated by spaces); a sibling that is not listed is taken at main.
-  SIBLING_REFS: "EH3D-COMMON=v0.2.5 EH3D-CORE-LIBS=v0.1.4"
+  # The tag or the full commit of each sibling repository this one is built against (name=tag, separated by spaces); a sibling that is not listed is taken at main.
+  SIBLING_REFS: "EH3D-COMMON=v0.2.5 EH3D-CORE-LIBS=7ebe57d3821fe98aaca4c103c0c7f1eed92b38f7"
 
 jobs:
   rust:
@@ -48,6 +48,7 @@ jobs:
           python - <<'PY'
           import json
           import os
+          import re
           import subprocess
           from pathlib import Path
 
@@ -61,8 +62,15 @@ jobs:
                       continue
                   seen.add(dep)
                   ref = refs.get(dep)
-                  command = ["git", "-c", "advice.detachedHead=false", "clone", "--quiet", "--depth", "1"] + (["--branch", ref] if ref else [])
-                  subprocess.run(command + [f"https://github.com/{owner}/{dep}.git", dep], check=True)
+                  url = f"https://github.com/{owner}/{dep}.git"
+                  if ref and re.fullmatch("[0-9a-f]{40}", ref):
+                      # a commit that has no tag yet: git clone takes only names, so it is fetched by itself
+                      subprocess.run(["git", "init", "--quiet", dep], check=True)
+                      subprocess.run(["git", "-C", dep, "fetch", "--quiet", "--depth", "1", url, ref], check=True)
+                      subprocess.run(["git", "-C", dep, "-c", "advice.detachedHead=false", "checkout", "--quiet", "FETCH_HEAD"], check=True)
+                  else:
+                      command = ["git", "-c", "advice.detachedHead=false", "clone", "--quiet", "--depth", "1"] + (["--branch", ref] if ref else [])
+                      subprocess.run(command + [url, dep], check=True)
                   print(f"{dep} at {ref or 'main'}")
                   pending.append(dep)
           PY
@@ -111,6 +119,7 @@ jobs:
           python - <<'PY'
           import json
           import os
+          import re
           import subprocess
           from pathlib import Path
 
@@ -124,8 +133,15 @@ jobs:
                       continue
                   seen.add(dep)
                   ref = refs.get(dep)
-                  command = ["git", "-c", "advice.detachedHead=false", "clone", "--quiet", "--depth", "1"] + (["--branch", ref] if ref else [])
-                  subprocess.run(command + [f"https://github.com/{owner}/{dep}.git", dep], check=True)
+                  url = f"https://github.com/{owner}/{dep}.git"
+                  if ref and re.fullmatch("[0-9a-f]{40}", ref):
+                      # a commit that has no tag yet: git clone takes only names, so it is fetched by itself
+                      subprocess.run(["git", "init", "--quiet", dep], check=True)
+                      subprocess.run(["git", "-C", dep, "fetch", "--quiet", "--depth", "1", url, ref], check=True)
+                      subprocess.run(["git", "-C", dep, "-c", "advice.detachedHead=false", "checkout", "--quiet", "FETCH_HEAD"], check=True)
+                  else:
+                      command = ["git", "-c", "advice.detachedHead=false", "clone", "--quiet", "--depth", "1"] + (["--branch", ref] if ref else [])
+                      subprocess.run(command + [url, dep], check=True)
                   print(f"{dep} at {ref or 'main'}")
                   pending.append(dep)
           PY
