@@ -3,15 +3,15 @@
 //! everything that can be decided is decided here, in code that is tested.
 
 use crate::checks::{
-    add_dialect_hint, add_left_on, check, has_alerts, point_at, strict as make_strict, Clamp,
-    Finding, Level, Limits,
+    add_dialect_hint, add_left_on, check, has_alerts, parse_program, point_at,
+    strict as make_strict, Clamp, Finding, Level, Limits,
 };
 use crate::lang::{fill, Lang, Msg};
 use crate::timeline::{dwell_s, format_time, length, timeline, Machine, Timeline};
 use crate::viewport::Viewport;
 use eh3d_parser_gcode::{
-    codes, interpret_with, parse_bytes_with, read_file_limited, Dialect, InputLimits,
-    InterpretOptions, Motion, Segment, Trace,
+    codes, interpret_with, read_file_limited, Dialect, InputLimits, InterpretOptions, Motion,
+    Segment, Trace,
 };
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
@@ -178,6 +178,8 @@ pub struct Analysis {
     pub findings: Vec<Finding>,
     pub waits_s: f64,
     pub limits: Limits,
+    /// No dialect was chosen and the program is surely for a 3D printer, so it was read as Marlin.
+    pub read_as_marlin: bool,
 }
 
 impl Analysis {
@@ -242,7 +244,8 @@ impl Status {
 pub struct Window {
     pub lang: Lang,
     pub fields: Vec<Field>,
-    pub dialect: Dialect,
+    /// The dialect the person chose; `None` (automatic) reads as GRBL, or as Marlin a program that is surely for a 3D printer.
+    pub dialect: Option<Dialect>,
     pub laser: bool,
     pub strict: bool,
     pub program: Option<Loaded>,
@@ -268,7 +271,7 @@ impl Window {
         Window {
             lang,
             fields: default_fields(),
-            dialect: Dialect::Grbl,
+            dialect: None,
             laser: false,
             strict: false,
             program: None,
@@ -306,7 +309,9 @@ impl Window {
         }
     }
 
-    pub fn set_dialect(&mut self, dialect: Dialect) {
+    /// Chooses a dialect, or with `None` goes back to the automatic one.
+    pub fn set_dialect(&mut self, dialect: impl Into<Option<Dialect>>) {
+        let dialect = dialect.into();
         if self.dialect != dialect {
             self.dialect = dialect;
             self.mark_stale();
@@ -536,8 +541,9 @@ impl Window {
         let program = self.program.as_ref().ok_or(Status::NeedProgram)?;
         let machine = self.machine()?;
         let limits = self.limits()?;
-        let parsed = parse_bytes_with(&program.bytes, self.dialect, &InputLimits::default())
-            .map_err(|e| Status::Failed(format!("{}: {e}", program.name)))?;
+        let (parsed, read_as_marlin) =
+            parse_program(&program.bytes, self.dialect, &InputLimits::default())
+                .map_err(|e| Status::Failed(format!("{}: {e}", program.name)))?;
         let trace = interpret_with(
             &parsed,
             &InterpretOptions {
@@ -557,7 +563,16 @@ impl Window {
             timeline: tl,
             findings,
             limits,
+            read_as_marlin,
         })
+    }
+
+    /// What is said when the program on screen was read as Marlin without anyone choosing it.
+    pub fn dialect_notice(&self) -> Option<&'static str> {
+        self.analysis
+            .as_ref()
+            .filter(|a| a.read_as_marlin)
+            .map(|_| Msg::ReadAsMarlin.tr(self.lang))
     }
 
     /// How many moves there are to step through.
@@ -822,6 +837,7 @@ impl Window {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use eh3d_parser_gcode::parse_bytes_with;
     use std::fs;
 
     /// A plate with a rapid move sideways inside the material at the end (line 8).
@@ -1240,6 +1256,30 @@ mod tests {
         w.fit(800.0, 600.0);
         let (x, y) = w.viewport.to_screen(30.0, 20.0, 800.0, 600.0);
         assert!((0.0..=800.0).contains(&x) && (0.0..=600.0).contains(&y));
+    }
+
+    #[test]
+    fn a_printer_program_is_read_as_marlin_and_told_until_a_dialect_is_chosen() {
+        let s = Scratch::new("printer");
+        let p = s.write(
+            "print.nc",
+            "M104 S200\nG21 G90\nG1 X1 E0.5 F600\nG1 X2 E1\nM2\n",
+        );
+        let mut w = Window::new(Lang::Es);
+        assert!(w.open_program(&p));
+        assert!(w.dialect_notice().unwrap().starts_with("Leído como Marlin"));
+        // the person's choice rules, GRBL included
+        w.set_dialect(Dialect::Grbl);
+        assert!(w.analyse());
+        assert_eq!(w.dialect_notice(), None);
+        let a = w.analysis.as_ref().unwrap();
+        assert!(a
+            .findings
+            .iter()
+            .any(|f| f.message.contains("--dialect marlin")));
+        w.set_dialect(None);
+        assert!(w.analyse());
+        assert!(w.dialect_notice().is_some());
     }
 
     #[test]

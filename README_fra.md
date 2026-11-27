@@ -17,7 +17,7 @@
 
 ---
 
-**Vérification d'honnêteté - ce qui fonctionne aujourd'hui :** une bibliothèque Rust et un programme en ligne de commande (`eh3d-camdebug`) avec 241 tests exécutés sur un ordinateur : calcule le temps d'un programme G-code et trouve les mouvements rapides dans la matière, les mouvements hors de la table, les coupes broche arrêtée et les têtes au-dessus de pinces. Il a une fenêtre (compilée avec `--features gui`) qui ouvre un programme G-code, dessine son trajet en 2D, parcourt les mouvements pas à pas avec un tableau des lignes et montre les alertes et avertissements, mais la fenêtre n'a pas encore été vue sur un écran ; n'a pas été essayé sur une machine et n'a pas été vérifié sur une collection de fichiers réels.
+**Vérification d'honnêteté - ce qui fonctionne aujourd'hui :** une bibliothèque Rust et un programme en ligne de commande (`eh3d-camdebug`) avec 244 tests exécutés sur un ordinateur : calcule le temps d'un programme G-code et trouve les mouvements rapides dans la matière, les mouvements hors de la table, les coupes broche arrêtée et les têtes au-dessus de pinces. Il a une fenêtre (compilée avec `--features gui`) qui ouvre un programme G-code, dessine son trajet en 2D, parcourt les mouvements pas à pas avec un tableau des lignes et montre les alertes et avertissements, mais la fenêtre n'a pas encore été vue sur un écran ; n'a pas été essayé sur une machine et n'a pas été vérifié sur une collection de fichiers réels.
 
 ---
 
@@ -30,7 +30,7 @@
 |---|---|
 | Version | `0.1.0` |
 | Maturité | Fonctionnel |
-| Tests | 241 |
+| Tests | 244 |
 | Pile technique | Rust |
 | Sur du matériel réel | Non essayé : rien ici n'a fonctionné sur une machine |
 
@@ -46,7 +46,7 @@ Chaque ligne est une partie de ce dépôt et le feu dit où elle en est aujourd'
 |---|---|---|
 | Cœur | 🟡 | calcule le temps d'un programme G-code et trouve les mouvements rapides dans la matière, les mouvements hors de la table, les coupes broche arrêtée et les têtes au-dessus de pinces ; testé sur un ordinateur avec des entrées normales et abîmées, pas avec une collection de fichiers réels. |
 | Ligne de commande | 🟡 | `eh3d-camdebug` exécute les mêmes fonctions que la bibliothèque et affiche le résultat ; chaque erreur revient sous forme de message et de code de sortie non nul. |
-| Tests | 🟡 | 241 tests passent (`cargo test`), avec des cas normaux, des cas limites et des entrées abîmées. Elles incluent une simulation à graine fixe de une machine qui exécute le programme et que l'on confronte au débogueur, avec pannes injectées et reprise. |
+| Tests | 🟡 | 244 tests passent (`cargo test`), avec des cas normaux, des cas limites et des entrées abîmées. Elles incluent une simulation à graine fixe de une machine qui exécute le programme et que l'on confronte au débogueur, avec pannes injectées et reprise. |
 | Sécurité | 🟡 | Rust sûr et simple (`forbid(unsafe_code)`) : rien ne panique sur les fichiers reçus et une mauvaise valeur est une erreur avec sa raison ; pas de revue indépendante. |
 | Fenêtre | 🟠 | Écrite (egui, `--features gui`) : ouvrir ou déposer un programme, voir son trajet en 2D, parcourir les mouvements pas à pas ou les lire, un tableau des mouvements, les alertes et avertissements, les réglages de la machine et les limites ; sa logique est testée, mais elle n'a pas encore été compilée ni vue sur un écran. |
 | Matériel réel | 🔴 | Non essayé : rien ici n'a été exécuté sur une machine. |
@@ -59,7 +59,7 @@ Chaque ligne est une partie de ce dépôt et le feu dit où elle en est aujourd'
 * **Broche ou laser laissé allumé :** un programme qui se termine ainsi, sans `M5`, `M2` ni `M30`, est un avertissement (une alerte avec `--laser`) ; avec `--laser`, une attente (`G4`) ou une pause (`M0`, `M1`) à puissance constante (`M3`) est une alerte.
 * **Ce que le lecteur n'a pas compris** (compensation de rayon, cycles fixes, une ligne abîmée) apparaît comme une alerte avec sa ligne, si bien qu'un programme mal lu n'est jamais déclaré propre.
 * **Arcs, `--strict` et codes qui déplacent l'origine :** les limites de la table et les brides sont testées le long de l'arc d'un G2 ou G3, pas le long de sa corde ; `--strict` transforme chaque avertissement en alerte (code de sortie 1), pour un flux qui utilise le code de sortie comme barrière avant la machine ; un programme avec G92, G53, G28, G30 ou G10 est signalé au lieu de passer pour propre.
-* **Lecture et avis par code :** le programme est lu depuis ses octets (`--max-bytes N` refuse un fichier au-dessus de la limite, 256 MiB par défaut ; le texte non UTF-8 est lu comme du Latin-1 et signalé avec le code `input-not-utf8`) ; chaque constat du lecteur montre son code stable, et `--ignore CODE[,CODE]` omet les avis de ces codes. Ce qu'un contrôleur lirait autrement ne passe pas pour propre : `realtime-character` (un commentaire avec un caractère que GRBL exécute aussitôt), `feed-mode-unsupported` (`G93`, `G95`) et `word-repeated` (un mot écrit deux fois ou deux codes du même groupe). Un programme pour une imprimante Marlin lu avec le dialecte GRBL par défaut (un mot `E` ou un code de température) nomme `--dialect marlin` dans son premier constat à ce sujet.
+* **Lecture et avis par code :** le programme est lu depuis ses octets (`--max-bytes N` refuse un fichier au-dessus de la limite, 256 MiB par défaut ; le texte non UTF-8 est lu comme du Latin-1 et signalé avec le code `input-not-utf8`) ; chaque constat du lecteur montre son code stable, et `--ignore CODE[,CODE]` omet les avis de ces codes. Ce qu'un contrôleur lirait autrement ne passe pas pour propre : `realtime-character` (un commentaire avec un caractère que GRBL exécute aussitôt), `feed-mode-unsupported` (`G93`, `G95`) et `word-repeated` (un mot écrit deux fois ou deux codes du même groupe). Un programme pour une imprimante Marlin lu avec le dialecte GRBL par défaut (un mot `E` ou un code de température) nomme `--dialect marlin` dans son premier constat à ce sujet. Sans dialecte choisi, un programme destiné à coup sûr à une imprimante 3D (un code de température avec sa valeur et un mouvement avec un mot `E`, et aucun `M3`, `M4` ni `M6`) est lu comme Marlin et cela est dit, dans la sortie et dans la fenêtre ; `--dialect grbl` ou le choix de la fenêtre l'emportent toujours, et dans le doute il est lu comme GRBL.
 
 ## 🧩 Rôle dans EH3D
 
@@ -135,7 +135,7 @@ Pour prendre une capture de la fenêtre sans l'ouvrir à la main, lancez-la avec
 
 ## 🧪 Tests
 
-La suite compte 241 tests (`cargo test`, exécutés sous Windows et Linux dans le CI). Ils vérifient les cas normaux, les cas limites et les entrées abîmées : fichiers vides, bruit et fichiers coupés ne font jamais paniquer. Le CI exécute aussi `cargo fmt --check`, `cargo clippy` avec les avertissements comme erreurs et `python -I tools/ci_validate.py`.
+La suite compte 244 tests (`cargo test`, exécutés sous Windows et Linux dans le CI). Ils vérifient les cas normaux, les cas limites et les entrées abîmées : fichiers vides, bruit et fichiers coupés ne font jamais paniquer. Le CI exécute aussi `cargo fmt --check`, `cargo clippy` avec les avertissements comme erreurs et `python -I tools/ci_validate.py`.
 
 ## 🏗️ Compilation et publication
 

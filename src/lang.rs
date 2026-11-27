@@ -159,10 +159,12 @@ pub enum Msg {
     Analysed,
     NeedProgram,
     Truncated,
+    DialectAuto,
+    ReadAsMarlin,
 }
 
 impl Msg {
-    pub const ALL: [Msg; 71] = [
+    pub const ALL: [Msg; 73] = [
         Msg::Language,
         Msg::Fit,
         Msg::Cancel,
@@ -234,6 +236,8 @@ impl Msg {
         Msg::Analysed,
         Msg::NeedProgram,
         Msg::Truncated,
+        Msg::DialectAuto,
+        Msg::ReadAsMarlin,
     ];
 
     /// The words in the order English, Spanish, German, French, Italian, Japanese, Chinese, Portuguese.
@@ -901,6 +905,26 @@ impl Msg {
                 "先に G コード プログラムを開いてください",
                 "请先打开 G 代码程序",
                 "Abra primeiro um programa G-code",
+            ],
+            Msg::DialectAuto => [
+                "Automatic",
+                "Automático",
+                "Automatisch",
+                "Automatique",
+                "Automatico",
+                "自動",
+                "自动",
+                "Automático",
+            ],
+            Msg::ReadAsMarlin => [
+                "Read as Marlin: this program is for a 3D printer (temperature codes and extruder words). To read it as GRBL, choose GRBL in the dialect list or use --dialect grbl.",
+                "Leído como Marlin: este programa es para una impresora 3D (códigos de temperatura y palabras del extrusor). Para leerlo como GRBL, elija GRBL en la lista de dialectos o use --dialect grbl.",
+                "Als Marlin gelesen: Dieses Programm ist für einen 3D-Drucker (Temperaturcodes und Extruderwörter). Um es als GRBL zu lesen, wählen Sie GRBL in der Dialektliste oder verwenden Sie --dialect grbl.",
+                "Lu comme Marlin : ce programme est destiné à une imprimante 3D (codes de température et mots de l'extrudeur). Pour le lire comme GRBL, choisissez GRBL dans la liste des dialectes ou utilisez --dialect grbl.",
+                "Letto come Marlin: questo programma è per una stampante 3D (codici di temperatura e parole dell'estrusore). Per leggerlo come GRBL, scegliere GRBL nell'elenco dei dialetti o usare --dialect grbl.",
+                "Marlin として読み込みました：このプログラムは 3D プリンター用です（温度コードと押出機のワード）。GRBL として読むには、方言の一覧で GRBL を選ぶか --dialect grbl を使ってください。",
+                "按 Marlin 读取：此程序用于 3D 打印机（含温度代码和挤出机指令字）。若要按 GRBL 读取，请在方言列表中选择 GRBL 或使用 --dialect grbl。",
+                "Lido como Marlin: este programa é para uma impressora 3D (códigos de temperatura e palavras do extrusor). Para o ler como GRBL, escolha GRBL na lista de dialetos ou use --dialect grbl.",
             ],
             Msg::Truncated => [
                 "The picture shows only the first {0} pieces",

@@ -1,6 +1,9 @@
 //! What would hurt: each finding has the line of the program, how serious it is and what it is.
 
-use eh3d_parser_gcode::{codes, Dialect, Motion, Program, Segment, Severity, Trace};
+use eh3d_parser_gcode::{
+    codes, parse_bytes_with, Dialect, InputError, InputLimits, Motion, Program, Segment, Severity,
+    Trace,
+};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Level {
@@ -329,6 +332,42 @@ pub fn check(trace: &Trace, limits: &Limits) -> Vec<Finding> {
     out.sort_by_key(|f| f.line);
     out.dedup_by(|a, b| a.line == b.line && a.message == b.message);
     out
+}
+
+/// Whether a program read with the GRBL dialect is surely one for a 3D printer: it has a temperature code (`M104`, `M109`, `M140` or `M190`) with
+/// its `S` or `R` value, a move with an extruder word (`E` on a `G0` to `G3`), and nothing that drives a spindle or changes a tool (`M3`, `M4`,
+/// `M6`). One sign alone is not enough: `M104` may be a macro of the user on a CNC controller, and `E` a word of something else.
+pub fn is_printer_program(program: &Program) -> bool {
+    let (mut temperature, mut extrusion) = (false, false);
+    for block in &program.blocks {
+        let has = |letter: char, values: &[f64]| {
+            block
+                .words
+                .iter()
+                .any(|w| w.letter == letter && values.contains(&w.value))
+        };
+        if has('M', &[3.0, 4.0, 6.0]) {
+            return false;
+        }
+        temperature |= has('M', &[104.0, 109.0, 140.0, 190.0])
+            && (block.get('S').is_some() || block.get('R').is_some());
+        extrusion |= has('G', &[0.0, 1.0, 2.0, 3.0]) && block.get('E').is_some();
+    }
+    temperature && extrusion
+}
+
+/// Reads a program with the dialect that was chosen. With none chosen it is read as GRBL, unless it is surely a program for a 3D printer
+/// ([`is_printer_program`]): then it is read as Marlin and the second value is `true`, so that the person is told.
+pub fn parse_program(
+    bytes: &[u8],
+    chosen: Option<Dialect>,
+    limits: &InputLimits,
+) -> Result<(Program, bool), InputError> {
+    let program = parse_bytes_with(bytes, chosen.unwrap_or(Dialect::Grbl), limits)?;
+    if chosen.is_none() && is_printer_program(&program) {
+        return Ok((parse_bytes_with(bytes, Dialect::Marlin, limits)?, true));
+    }
+    Ok((program, false))
 }
 
 /// What is added to the first finding of the reader when a program read with the GRBL dialect carries what a program for a Marlin printer does.

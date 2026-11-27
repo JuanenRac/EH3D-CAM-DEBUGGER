@@ -6,7 +6,7 @@ EH3D-CAM-DEBUGGER is a working program on a computer: a library (`eh3d_cam_debug
 
 ## Capabilities
 
-The official state of each capability is in `REQUIREMENTS.md`. The register has 33 requirements: 24 implemented, 4 prototype, 5 planned and 0 validated. By progress: 24 done, 4 partial, 1 pending and 4 blocked. This page never states a state that `REQUIREMENTS.md` does not.
+The official state of each capability is in `REQUIREMENTS.md`. The register has 34 requirements: 25 implemented, 4 prototype, 5 planned and 0 validated. By progress: 25 done, 4 partial, 1 pending and 4 blocked. This page never states a state that `REQUIREMENTS.md` does not.
 
 ## Open questions
 
