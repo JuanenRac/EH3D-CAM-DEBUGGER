@@ -4,6 +4,8 @@ All notable changes to this project are documented here.
 
 ## [Unreleased]
 
+## [0.1.1] - Printer programs are read as Marlin when no dialect is chosen
+
 - **Third-party notices in every package (`docs/THIRD_PARTY_NOTICES`):** the packages of the releases now carry the copyright notices and licence texts of the Rust crates and of the data the program is built with, and the CI fails when a new dependency or licence is not in the file.
 
 - **A program for a 3D printer is read as Marlin when no dialect is chosen, and it is said (changes what a run without `--dialect` gives):** only a program that is surely for a printer is taken as one (a temperature code `M104`, `M109`, `M140` or `M190` with its value, a move with an extruder word `E`, and no `M3`, `M4` or `M6`); in doubt it is read as GRBL, with the advice that names the Marlin dialect. `--dialect grbl` and a dialect chosen in the window always rule. `check` says it in its first line in the eight languages, `steps` and `--json` say it on the error output (the JSON report carries `read_as`), and the window shows it above the findings; its dialect list starts at "Automatic". Not tried with real printer files.
